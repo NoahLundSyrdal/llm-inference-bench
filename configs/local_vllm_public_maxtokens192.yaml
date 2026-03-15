@@ -1,0 +1,27 @@
+# max_tokens=192 (baseline is 96).
+name: local-vllm-public-maxtokens192
+backend:
+  engine: vllm
+  base_url: http://localhost:8000
+  model: Qwen/Qwen2-0.5B-Instruct
+  endpoint: /v1/chat/completions
+
+generation:
+  max_tokens: 192
+  temperature: 0.0
+  top_p: 1.0
+  stream: false
+  request_timeout_s: 60
+
+workload:
+  label: quickstart
+  prompts_file: ../prompts/quickstart.json
+  prompt_field: prompt
+  num_requests: 24
+  shuffle: true
+  seed: 42
+
+concurrency_sweep: [1, 2, 4, 8, 16]
+repetitions: 1
+output_dir: ../results/qwen2-0.5b-maxtokens192
+metadata: {}
