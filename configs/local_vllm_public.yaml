@@ -22,8 +22,8 @@ workload:
   shuffle: true
   seed: 42
 
-concurrency_sweep: [1, 4, 8]
+concurrency_sweep: [1, 2, 4, 8, 16]
 repetitions: 1
-output_dir: ../outputs
+output_dir: ../results/qwen2-0.5b-local-first-run
 metadata:
   purpose: "Local vLLM check/bench with public model (no HF auth)"

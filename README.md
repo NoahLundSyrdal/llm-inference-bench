@@ -84,9 +84,24 @@ make bench
 # or: make bench CONFIG=configs/local_vllm_public.yaml
 ```
 
+## First benchmark results (evidence)
+
+Command used (vLLM serving Qwen2-0.5B-Instruct locally, public config):
+
+```bash
+make serve VLLM_MODEL=Qwen/Qwen2-0.5B-Instruct
+make bench CONFIG=configs/local_vllm_public.yaml
+```
+
+Artifacts are under `results/qwen2-0.5b-local-first-run/` (raw logs, aggregated CSV, plots, summary, config snapshot).
+
+**Finding:** Latency rose steadily with concurrency (p50 from ~3.3s at concurrency 1 to ~24s at 16), while throughput fell from ~29 to ~5 tok/s. The single-worker local server saturates quickly: higher concurrency did not improve throughput, only increased queueing and per-request latency.
+
+![Latency vs concurrency — Qwen2-0.5B-Instruct, concurrency sweep 1–16](results/qwen2-0.5b-local-first-run/latency_vs_concurrency.png)
+
 ## Sample output
 
-A run creates `outputs/<run_name>_<timestamp>/` with files like:
+A run creates `outputs/<run_name>_<timestamp>/` (or your configured `output_dir`) with files like:
 
 ```text
 raw_requests.jsonl
