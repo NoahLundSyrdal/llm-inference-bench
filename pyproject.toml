@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "llm-inference-bench"
 version = "0.1.0"
-description = "Minimal, reproducible vLLM inference benchmark runner"
+description = "Benchmark local vLLM (OpenAI-compatible API)"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE" }

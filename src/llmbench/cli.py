@@ -9,16 +9,12 @@ from llmbench.backends import BackendConnectionError
 from llmbench.config import ConfigError, load_run_config
 from llmbench.runner import BenchmarkRunner, check_backend
 
-app = typer.Typer(
-    add_completion=False,
-    no_args_is_help=True,
-    help="Minimal vLLM benchmark runner for reproducible local inference measurements.",
-)
+app = typer.Typer(add_completion=False, no_args_is_help=True)
 
 
 @app.command()
 def check(config_path: Path) -> None:
-    """Check connectivity to local vLLM and verify configured model is visible."""
+    """Check vLLM is reachable and configured model is listed."""
     try:
         config = load_run_config(config_path)
     except ConfigError as exc:
@@ -36,7 +32,7 @@ def check(config_path: Path) -> None:
 
 @app.command()
 def run(config_path: Path) -> None:
-    """Run benchmark and emit raw records, aggregate CSV, plots, and markdown summary."""
+    """Run benchmark; write CSV, plots, summary to run dir."""
     try:
         config = load_run_config(config_path)
     except ConfigError as exc:

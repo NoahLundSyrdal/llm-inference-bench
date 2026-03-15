@@ -1,5 +1,4 @@
-# Same as local_vllm.yaml but uses a public (non-gated) model so serve/check
-# work without Hugging Face login. Use this for CI or quick local verification.
+# Public model (no HF login).
 name: local-vllm-public
 backend:
   engine: vllm
@@ -25,5 +24,4 @@ workload:
 concurrency_sweep: [1, 2, 4, 8, 16]
 repetitions: 1
 output_dir: ../results/qwen2-0.5b-local-first-run
-metadata:
-  purpose: "Local vLLM check/bench with public model (no HF auth)"
+metadata: {}

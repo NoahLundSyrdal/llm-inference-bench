@@ -1,11 +1,8 @@
-# Prefer venv Python so make check/bench work without activating the venv.
 PYTHON ?= $(if $(wildcard .venv/bin/python),.venv/bin/python,python3)
 CONFIG ?= configs/local_vllm.yaml
 
 .PHONY: install lint test check bench serve
 
-# Start local vLLM OpenAI-compatible server (default port 8000, /v1 API).
-# Requires: pip install vllm (e.g. in .venv).
 VLLM_MODEL ?= meta-llama/Llama-3.1-8B-Instruct
 serve:
 	.venv/bin/vllm serve $(VLLM_MODEL) --host 0.0.0.0 --port 8000

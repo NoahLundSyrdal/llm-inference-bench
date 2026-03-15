@@ -13,7 +13,7 @@ def generate_summary_markdown(
     plot_paths: list[Path],
 ) -> str:
     lines: list[str] = []
-    lines.append("# llm-inference-bench Summary")
+    lines.append("# Summary")
     lines.append("")
     lines.append("## Run Metadata")
     lines.append("")

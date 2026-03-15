@@ -56,9 +56,7 @@ class WorkloadConfig(BaseModel):
     prompt_field: str = "prompt"
     num_requests: int = Field(default=32, ge=1)
     synthetic_count: int = Field(default=0, ge=0)
-    synthetic_prompt_template: str = (
-        "Summarize a practical tip for reducing LLM inference latency. (sample={i})"
-    )
+    synthetic_prompt_template: str = "Short tip about APIs. (sample {i})"
     shuffle: bool = True
     seed: int = 42
 
