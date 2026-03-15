@@ -1,0 +1,8 @@
+[
+  {"prompt": "Explain in 4 bullet points why TTFT matters for chat UX."},
+  {"prompt": "Describe one practical way to reduce p99 latency in LLM serving."},
+  {"prompt": "Summarize the trade-off between throughput and tail latency."},
+  {"prompt": "Write a short incident update for temporary 5xx spikes under load."},
+  {"prompt": "Give a checklist for reproducible inference benchmarking."},
+  {"prompt": "Explain why concurrency sweeps reveal saturation behavior."}
+]

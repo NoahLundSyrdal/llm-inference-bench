@@ -1,0 +1,27 @@
+name: local-vllm-smoke
+backend:
+  engine: vllm
+  base_url: http://localhost:8000
+  model: meta-llama/Llama-3.1-8B-Instruct
+  endpoint: /v1/chat/completions
+
+generation:
+  max_tokens: 96
+  temperature: 0.0
+  top_p: 1.0
+  stream: false
+  request_timeout_s: 30
+
+workload:
+  label: quickstart
+  prompts_file: ../prompts/quickstart.json
+  prompt_field: prompt
+  num_requests: 24
+  shuffle: true
+  seed: 42
+
+concurrency_sweep: [1, 4, 8]
+repetitions: 1
+output_dir: ../outputs
+metadata:
+  purpose: "First local benchmark run against vLLM"
