@@ -1,0 +1,34 @@
+name: exp-vllm-public-long-prompts-concurrency32
+backend:
+  engine: vllm
+  base_url: http://localhost:8000
+  model: Qwen/Qwen2-0.5B-Instruct
+  api_key: null
+  endpoint: /v1/chat/completions
+  extra_headers: {}
+generation:
+  max_tokens: 96
+  temperature: 0.0
+  top_p: 1.0
+  stream: false
+  request_timeout_s: 180.0
+workload:
+  label: long-context
+  prompts_file: /workspace/prompts/long_context.json
+  prompt_field: prompt
+  num_requests: 48
+  synthetic_count: 0
+  synthetic_prompt_template: Short tip about APIs. (sample {i})
+  shuffle: true
+  seed: 42
+concurrency_sweep:
+- 1
+- 2
+- 4
+- 8
+- 16
+- 32
+repetitions: 1
+output_dir: /workspace/results/exp-qwen2-0.5b-long-prompts-concurrency32
+metadata:
+  experiment: context-scaling
