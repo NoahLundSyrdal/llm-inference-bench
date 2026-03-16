@@ -21,3 +21,119 @@ Doubling max_tokens roughly doubled latency; tok/s stayed the same. Single worke
 Longer context adds prefill cost: at c=1, latency and tok/s both reflect more input work; at high concurrency the gap is smaller (GPU bound on both). TTFT not populated in this run (backend/stream=false).
 
 **Systems story:** Output length affects latency linearly (exp 2); longer context changes prefill and effective tok/s (exp 3). So: output length ≈ linear latency; input context ≈ different TTFT/prefill and slightly lower tok/s.
+
+---
+
+## Experiment batch: concurrency 32 + streaming + long prompts
+
+Environment:
+- vLLM: `0.15.0+cpu`
+- torch: `2.10.0+cpu`
+- model: `Qwen/Qwen2-0.5B-Instruct`
+- hardware: 4 vCPU (`Intel(R) Xeon(R) Processor`)
+- server command: `.venv/bin/vllm serve Qwen/Qwen2-0.5B-Instruct --host 0.0.0.0 --port 8000`
+
+Configs:
+- `configs/exp_vllm_public_concurrency32_stream_false.yaml`
+- `configs/exp_vllm_public_concurrency32_stream_true.yaml`
+- `configs/exp_vllm_public_long_prompts_concurrency32.yaml`
+
+Run directories:
+- `results/exp-qwen2-0.5b-concurrency32-stream-false/exp-vllm-public-concurrency32-stream-false_20260316_174216`
+- `results/exp-qwen2-0.5b-concurrency32-stream-true/exp-vllm-public-concurrency32-stream-true_20260316_174654`
+- `results/exp-qwen2-0.5b-long-prompts-concurrency32/exp-vllm-public-long-prompts-concurrency32_20260316_175154`
+
+### A) Throughput scaling (`stream: false`)
+
+| Concurrency | p95 latency | throughput tok/s |
+|-------------|-------------|------------------|
+| 1           | 3.41 s      | 29.19            |
+| 8           | 4.97 s      | 19.36            |
+| 16          | 6.96 s      | 14.10            |
+| 32          | 10.64 s     | 9.50             |
+
+Observations:
+- Throughput declines steadily as concurrency increases (32 is ~32.6% of c=1 throughput).
+- Latency rises superlinearly at higher concurrency; p95 is 1.53x higher at c=32 vs c=16.
+
+### B) Streaming behavior (`stream: true` vs `stream: false`)
+
+At concurrency 32:
+- `stream=false`: p95 10.64 s, tok/s 9.50
+- `stream=true`:  p95 10.58 s, tok/s 7.51, TTFT p50 508.9 ms
+
+Observations:
+- End-to-end p95 latency is similar between modes at c=32.
+- Streaming TTFT p50 increases sharply with load (174.7 ms at c=16 to 508.9 ms at c=32, 2.91x).
+- Streaming run has lower mean tok/s than non-streaming in this CPU setup.
+
+### C) Longer prompts (context stress)
+
+At concurrency 32:
+- baseline prompts (`stream=false`): p95 10.64 s
+- long prompts (`stream=false`): p95 13.81 s
+
+Observation:
+- Longer prompts increase tail latency under high concurrency (+29.8% p95 at c=32 vs baseline prompts).
+
+### High-signal upstream candidate
+
+Potential issue title:
+- `TTFT jump at concurrency 32 with Qwen2-0.5B-Instruct on vLLM CPU backend`
+
+Candidate claim from this batch:
+- In `stream=true`, TTFT p50 jumps 2.91x between concurrency 16 and 32 (174.7 ms -> 508.9 ms), while p95 latency changes less sharply.
+
+Next experiment step:
+- Add explicit prompt-length buckets targeting ~512, ~2048, and ~8192 input tokens, then rerun the same concurrency sweep for strict context-length scaling curves.
+
+---
+
+## Experiment batch: explicit token buckets (512 / 2048 / 8192)
+
+Environment:
+- vLLM: `0.15.0+cpu`
+- torch: `2.10.0+cpu`
+- model: `Qwen/Qwen2-0.5B-Instruct`
+- hardware: 4 vCPU (`Intel(R) Xeon(R) Processor`)
+- server command: `.venv/bin/vllm serve Qwen/Qwen2-0.5B-Instruct --host 0.0.0.0 --port 8000`
+
+Configs:
+- `configs/exp_vllm_public_ctx512_stream_true.yaml`
+- `configs/exp_vllm_public_ctx2048_stream_true.yaml`
+- `configs/exp_vllm_public_ctx8192_stream_true.yaml`
+
+Prompt sets (24 prompts each; exact bucketed token lengths):
+- `prompts/context_512_tokens.json`
+- `prompts/context_2048_tokens.json`
+- `prompts/context_8192_tokens.json`
+
+Run directories:
+- `results/exp-qwen2-0.5b-ctx512-stream-true/exp-vllm-public-ctx512-stream-true_20260316_180650`
+- `results/exp-qwen2-0.5b-ctx2048-stream-true/exp-vllm-public-ctx2048-stream-true_20260316_180935`
+- `results/exp-qwen2-0.5b-ctx8192-stream-true/exp-vllm-public-ctx8192-stream-true_20260316_181339`
+
+### Key metrics (stream=true)
+
+| Bucket | Concurrency | p95 latency | TTFT p50 | Throughput tok/s |
+|--------|-------------|-------------|----------|------------------|
+| 512    | 1           | 3.05 s      | 315 ms   | 15.62            |
+| 512    | 32          | 8.85 s      | 596 ms   | 5.10             |
+| 2048   | 1           | 5.08 s      | 2.03 s   | 9.29             |
+| 2048   | 32          | 16.34 s     | 1.35 s   | 2.90             |
+| 8192   | 1           | 30.29 s     | 25.12 s  | 1.56             |
+| 8192   | 32          | 47.82 s     | 4.16 s   | 0.95             |
+
+### Strongest anomaly
+
+For the 8192-token bucket, increasing concurrency from 1 to 2 *reduced* p95 latency sharply:
+- p95(c=1): 30.29 s
+- p95(c=2): 6.37 s
+- ratio: **4.76x faster at c=2 than c=1**
+
+This non-monotonic result is much larger than the same ratio at shorter buckets:
+- 512 bucket: 1.08x (c1/c2)
+- 2048 bucket: 1.49x (c1/c2)
+
+Potential interpretation to validate upstream:
+- Prefix-cache/warm-state effects across sweep steps may dominate c=1 in long-context runs, making raw concurrency curves misleading unless cache effects are controlled.

@@ -36,6 +36,77 @@ No Hugging Face login required for the public Qwen config. The default Llama con
 - **Config:** [`configs/local_vllm_public.yaml`](configs/local_vllm_public.yaml) (public model), [`configs/local_vllm.yaml`](configs/local_vllm.yaml) (Llama, gated). Set `backend.base_url`, `backend.model`, `concurrency_sweep`, `workload.prompts_file`.
 - **Commands:** `make serve` (vLLM on 8000), `make check`, `make bench`, `make lint`, `make test`. Override: `CONFIG=...`, `VLLM_MODEL=...`.
 
+## Using this for OSS contributions
+
+Treat this repo as a performance investigation tool for upstream projects.
+
+### Investigation loop
+
+1. Run benchmark.
+2. Observe odd behavior.
+3. Create minimal reproduction.
+4. Open upstream issue.
+5. Potentially submit fix.
+
+Start with the project this repo already supports well: **vLLM**.
+
+### High-signal vLLM investigations
+
+1. **Throughput scaling**
+   - Sweep concurrency: `[1, 2, 4, 8, 16, 32]`
+   - Look for early throughput plateaus, sudden drops, and instability.
+2. **Context-length scaling**
+   - Test prompt lengths: `512`, `2048`, `8192` tokens.
+   - Look for large TTFT spikes and nonlinear latency growth.
+3. **Streaming behavior**
+   - Compare `stream: true` vs `stream: false`.
+   - Compare TTFT and end-to-end latency.
+
+### What makes a good upstream issue
+
+Maintainers respond best to issues that are reproducible and artifact-backed.
+
+- **Title:** specific symptom + model + condition (example: `Latency spike at concurrency 16 with Qwen2-0.5B on vLLM`)
+- **Environment:** vLLM version, GPU, model, server command
+- **Reproduction:** exact serve command and benchmark command
+- **Benchmark config:** YAML snippet
+- **Results:** attached plot + `aggregated.csv`
+- **Observation:** one clear quantitative claim (example: `p95 latency increases 3x between concurrency 8 and 16`)
+
+Minimal issue body template:
+
+```text
+Using llm-inference-bench we observed a latency cliff when increasing concurrency.
+
+Environment:
+- vLLM:
+- GPU:
+- Model:
+- Server command:
+
+Reproduction:
+1) vllm serve ...
+2) make bench CONFIG=...
+
+Benchmark config:
+<yaml snippet>
+
+Results:
+- plot: <attach>
+- aggregated.csv: <attach>
+
+Observation:
+- p95 latency increases ...
+```
+
+### Other contribution paths
+
+- Add benchmark coverage upstream (example targets in vLLM: `benchmarks/local_concurrency_scaling.py`, `docs/performance/local_serving_benchmarks.md`).
+- File regression reports across versions (example: vLLM `0.5.0` vs `0.5.1` throughput regression).
+- Extend later to compare other backends (TGI, SGLang, llama.cpp) once vLLM workflow is solid.
+
+The most valuable OSS output from this repo is **high-quality performance regression evidence**.
+
 ## Repo layout
 
 - `configs/` — benchmark configs
