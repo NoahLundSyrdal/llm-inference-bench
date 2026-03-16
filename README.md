@@ -2,75 +2,55 @@
 
 [![CI](https://github.com/noahlundsyrdal/llm-inference-bench/actions/workflows/ci.yml/badge.svg)](https://github.com/noahlundsyrdal/llm-inference-bench/actions/workflows/ci.yml)
 
-Benchmark local vLLM via the OpenAI-compatible API. YAML configs, async runner, CSV + plots.
+**A lightweight benchmark harness for local vLLM serving** — measure latency and throughput across concurrency sweeps with YAML configs, an async client, CSV outputs, and plots.
 
-## Quickstart
+---
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-make install
-pip install vllm
-make serve
-make check
-make bench
-```
-
-Without Hugging Face login: `make serve VLLM_MODEL=Qwen/Qwen2-0.5B-Instruct`, then `make check CONFIG=configs/local_vllm_public.yaml` and `make bench CONFIG=configs/local_vllm_public.yaml`. Default model (Llama) is gated — use `huggingface-cli login` if you need it.
-
-### Install
+## 30-second quickstart
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e '.[dev]'
-```
-
-### Start vLLM server
-
-```bash
-pip install vllm
-make serve
-```
-
-Public model (no HF login): `make serve VLLM_MODEL=Qwen/Qwen2-0.5B-Instruct`
-
-### Check + run benchmark
-
-```bash
-make check
-make bench
-```
-
-Use `CONFIG=configs/local_vllm_public.yaml` for the public model.
-
-## Example run (Qwen2-0.5B-Instruct)
-
-```bash
+python3 -m venv .venv && source .venv/bin/activate
+make install && pip install vllm
 make serve VLLM_MODEL=Qwen/Qwen2-0.5B-Instruct
+make check CONFIG=configs/local_vllm_public.yaml
 make bench CONFIG=configs/local_vllm_public.yaml
 ```
 
-Artifacts: `results/qwen2-0.5b-local-first-run/`
+No Hugging Face login required for the public Qwen config. The default Llama config is gated; use `huggingface-cli login` if you want to run that.
 
-Latency went up with concurrency (p50 ~3.3s at c=1 to ~24s at c=16); throughput dropped (~29 to ~5 tok/s). Single worker saturates — more concurrency just added queueing.
+---
+
+## First benchmark (Qwen2-0.5B-Instruct)
 
 ![Latency vs concurrency](results/qwen2-0.5b-local-first-run/latency_vs_concurrency.png)
 
-Second run with max_tokens=192: `results/qwen2-0.5b-maxtokens192/`. [notes/findings.md](notes/findings.md) has the comparison.
+**Finding:** p50 latency rose from ~3.3s at concurrency 1 to ~24s at 16, while throughput fell from ~29 tok/s to ~5 tok/s. On this single-worker local setup, additional concurrency increased queueing much more than useful throughput. A second run with max_tokens=192 showed similar token generation rate, suggesting generation speed—not request overhead—was the main bottleneck.
 
-## Output layout
+**More runs and comparison:** [notes/findings.md](notes/findings.md)
 
-Run dir is `output_dir/<run_name>_<timestamp>/`. Contains: `raw_requests.jsonl`, `raw_requests.csv`, `aggregated.csv`, `failures.csv`, `summary.md`, `run_metadata.json`, `config_snapshot.yaml`, and the PNGs (`latency_vs_concurrency.png`, etc.).
+---
 
-## Config
+## Usage notes
 
-[`configs/local_vllm.yaml`](configs/local_vllm.yaml) (Llama, gated) and [`configs/local_vllm_public.yaml`](configs/local_vllm_public.yaml) (Qwen2, no login). Important: `backend.base_url`, `backend.model`, `concurrency_sweep`, `workload.prompts_file`.
+- **Output:** `output_dir/<run_name>_<timestamp>/` — `raw_requests.jsonl`, `aggregated.csv`, `summary.md`, PNGs.
+- **Config:** [`configs/local_vllm_public.yaml`](configs/local_vllm_public.yaml) (public model), [`configs/local_vllm.yaml`](configs/local_vllm.yaml) (Llama, gated). Set `backend.base_url`, `backend.model`, `concurrency_sweep`, `workload.prompts_file`.
+- **Commands:** `make serve` (vLLM on 8000), `make check`, `make bench`, `make lint`, `make test`. Override: `CONFIG=...`, `VLLM_MODEL=...`.
 
-## Commands
+## Repo layout
 
-- `make install` — install (Makefile uses `.venv/bin/python` if present)
-- `make serve` — vLLM on port 8000. `VLLM_MODEL=...` to override model
-- `make check` — ping vLLM and check model. `CONFIG=...` to pick config
-- `make bench` — run benchmark
-- `make lint`, `make test` — ruff + pytest
+- `configs/` — benchmark configs
+- `prompts/` — prompt datasets
+- `results/` — saved benchmark runs
+- `notes/` — experiment summaries
+- `src/llmbench/` — benchmark implementation
+
+## Why this exists
+
+Local serving stacks are easy to run but harder to evaluate consistently. This project makes it easy to run reproducible concurrency sweeps against vLLM, inspect request-level behavior, and generate artifacts that are useful for debugging regressions, performance bottlenecks, or future upstream issues.
+
+## Roadmap
+
+- Longer-context benchmarks
+- Stream-mode TTFT validation
+- Additional public model comparisons
+- Future multi-backend support
