@@ -1,0 +1,30 @@
+# Third experiment: longer input prompts / larger context.
+# Same model and concurrency sweep as baseline; only the prompt set is longer.
+# Compare TTFT and end-to-end latency vs baseline to tell the story:
+# output length affects latency linearly; longer context changes TTFT/behavior differently.
+name: local-vllm-public-long-prompts
+backend:
+  engine: vllm
+  base_url: http://localhost:8000
+  model: Qwen/Qwen2-0.5B-Instruct
+  endpoint: /v1/chat/completions
+
+generation:
+  max_tokens: 96
+  temperature: 0.0
+  top_p: 1.0
+  stream: false
+  request_timeout_s: 60
+
+workload:
+  label: long-context
+  prompts_file: ../prompts/long_context.json
+  prompt_field: prompt
+  num_requests: 24
+  shuffle: true
+  seed: 42
+
+concurrency_sweep: [1, 2, 4, 8, 16]
+repetitions: 1
+output_dir: ../results/qwen2-0.5b-long-prompts
+metadata: {}

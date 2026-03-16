@@ -1,0 +1,48 @@
+{
+  "run_id": "20260316_000556",
+  "run_name": "local-vllm-public-long-prompts",
+  "created_at": "2026-03-16T00:05:56.277950Z",
+  "engine": "vllm",
+  "model": "Qwen/Qwen2-0.5B-Instruct",
+  "python_version": "3.13.7",
+  "platform": "macOS-26.3-arm64-arm-64bit-Mach-O",
+  "config": {
+    "name": "local-vllm-public-long-prompts",
+    "backend": {
+      "engine": "vllm",
+      "base_url": "http://localhost:8000",
+      "model": "Qwen/Qwen2-0.5B-Instruct",
+      "api_key": null,
+      "endpoint": "/v1/chat/completions",
+      "extra_headers": {}
+    },
+    "generation": {
+      "max_tokens": 96,
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "stream": false,
+      "request_timeout_s": 60.0
+    },
+    "workload": {
+      "label": "long-context",
+      "prompts_file": "/Users/noahsyrdal/llm-inference-bench/prompts/long_context.json",
+      "prompt_field": "prompt",
+      "num_requests": 24,
+      "synthetic_count": 0,
+      "synthetic_prompt_template": "Short tip about APIs. (sample {i})",
+      "shuffle": true,
+      "seed": 42
+    },
+    "concurrency_sweep": [
+      1,
+      2,
+      4,
+      8,
+      16
+    ],
+    "repetitions": 1,
+    "output_dir": "/Users/noahsyrdal/llm-inference-bench/results/qwen2-0.5b-long-prompts",
+    "metadata": {}
+  },
+  "git_commit": "0dcc22c3dcacf70b61cf5a442bc50f53c4df1a48"
+}

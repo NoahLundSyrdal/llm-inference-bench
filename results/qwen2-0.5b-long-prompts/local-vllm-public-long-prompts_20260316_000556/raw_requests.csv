@@ -1,0 +1,481 @@
+request_id,run_id,run_name,workload_label,repetition,concurrency,prompt_index,prompt,engine,model,stream,started_at,ended_at,latency_ms,ttft_ms,completion_time_ms,output_tokens,output_tokens_estimated,tokens_per_sec,success,status_code,error_type,error_message
+5110e3ec-8cb0-4657-b270-7935671afea9,20260316_000556,local-vllm-public-long-prompts,long-context,1,1,0,"Background: In serving LLMs, throughput is often measured in requests per second or tokens per second, while latency is measured as time to first token (TTFT) and total time to completion. Increasing concurrency usually increases total throughput but can increase latency because the GPU is shared across more in-flight requests.
+
+Explain the trade-off between throughput and latency in one sentence, then in one more sentence say what a good benchmark should report so we can reason about both.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:05:56.349844Z,2026-03-16T00:05:59.957864Z,3607.9981250222772,,3607.9981250222772,73,False,20.232826478963116,True,200,,
+f531af90-9e5b-4fd0-870c-e1c949bad565,20260316_000556,local-vllm-public-long-prompts,long-context,1,1,1,"Consider the following operational scenario.
+
+We have an inference service that uses the vLLM engine and the Qwen2-0.5B-Instruct model. Requests are sent with a fixed max_tokens value and temperature set to zero for reproducibility. The workload consists of a small set of prompts repeated and shuffled with a fixed seed so that runs are comparable. We collect per-request latency, time to first token, and token throughput.
+
+How would you reduce slow requests in this model API? Give three concrete steps and mention what you would measure before and after.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:05:59.958469Z,2026-03-16T00:06:04.161445Z,4202.949375030585,,4202.949375030585,96,False,22.841103100201252,True,200,,
+97d4b233-781d-4c5c-a938-e7c0e3736e08,20260316_000556,local-vllm-public-long-prompts,long-context,1,1,2,"In load testing an LLM API we often sweep concurrency: we run the same workload at concurrency 1, 2, 4, 8, 16, and sometimes higher. Each run uses the same number of requests, the same prompts (shuffled with the same seed), and the same generation parameters like max_tokens and temperature.
+
+Why run the same test at different concurrency levels? Give two reasons and mention what we learn about the system from the shape of the latency and throughput curves.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:06:04.162041Z,2026-03-16T00:06:08.290662Z,4128.599624964409,,4128.599624964409,96,False,23.252436351424507,True,200,,
+57cb60d1-0f19-4bad-9789-55463f528616,20260316_000556,local-vllm-public-long-prompts,long-context,1,1,3,"You are helping a team debug production latency. Here is the context.
+
+Our chat API serves a Qwen-based model on a single GPU with vLLM. We run a benchmark with 24 requests over concurrency levels 1, 2, 4, 8, and 16. At concurrency 1 we see about 3.3 seconds p50 latency and ~29 tokens per second. At concurrency 16, p50 latency rises to about 24 seconds and tokens per second drop to around 5. We use max_tokens=96 and temperature 0.
+
+List four reasons response time matters for chat apps in this setup, and one thing we could try next to improve latency at high concurrency.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:06:08.291663Z,2026-03-16T00:06:12.693888Z,4402.196582988836,,4402.196582988836,96,False,21.807295106031265,True,200,,
+bca3ed6b-5b6d-481b-a3d0-db508fe1339c,20260316_000556,local-vllm-public-long-prompts,long-context,1,1,4,"We are designing a benchmark for our inference stack. The stack uses vLLM, a single public model (e.g. Qwen2-0.5B-Instruct), and we care about latency percentiles, time to first token, and token throughput under different concurrency levels. We run the same prompt set multiple times with a fixed seed and record per-request timings and any failures.
+
+What should this benchmark report include to be reproducible? List at least five items (e.g. model, config, metrics, hardware, software versions).",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:06:12.694324Z,2026-03-16T00:06:16.771248Z,4076.9001661101356,,4076.9001661101356,96,False,23.54730213852546,True,200,,
+2c8acc43-392b-4eb1-a10c-6a6e1aac8f27,20260316_000556,local-vllm-public-long-prompts,long-context,1,1,5,"Incident summary for the team:
+
+Today between 14:00 and 14:02 UTC the model API returned 5xx errors for a subset of requests. The root cause was a transient OOM on the GPU when too many long-context requests were in flight. We increased the request timeout and added a simple queue limit. The API has been stable since 14:05.
+
+Draft a one-line status update for users: API had 5xx errors for 2 minutes, now fixed. Then add one short sentence on what we changed so it does not happen again.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:06:16.772350Z,2026-03-16T00:06:18.680647Z,1908.2857089815661,,1908.2857089815661,27,False,14.14882471367961,True,200,,
+6edb422c-d9f5-45eb-9dcf-adc06731573b,20260316_000556,local-vllm-public-long-prompts,long-context,1,1,6,"Background: In serving LLMs, throughput is often measured in requests per second or tokens per second, while latency is measured as time to first token (TTFT) and total time to completion. Increasing concurrency usually increases total throughput but can increase latency because the GPU is shared across more in-flight requests.
+
+Explain the trade-off between throughput and latency in one sentence, then in one more sentence say what a good benchmark should report so we can reason about both.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:06:18.681025Z,2026-03-16T00:06:22.277541Z,3596.506124944426,,3596.506124944426,73,False,20.29747690228889,True,200,,
+41becf3c-e19d-4c61-b1d8-d9e2ee6f26d4,20260316_000556,local-vllm-public-long-prompts,long-context,1,1,7,"Consider the following operational scenario.
+
+We have an inference service that uses the vLLM engine and the Qwen2-0.5B-Instruct model. Requests are sent with a fixed max_tokens value and temperature set to zero for reproducibility. The workload consists of a small set of prompts repeated and shuffled with a fixed seed so that runs are comparable. We collect per-request latency, time to first token, and token throughput.
+
+How would you reduce slow requests in this model API? Give three concrete steps and mention what you would measure before and after.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:06:22.280394Z,2026-03-16T00:06:25.874441Z,3594.0248749684542,,3594.0248749684542,96,False,26.711000435366387,True,200,,
+7756ae19-0973-412a-b3f1-35244582b319,20260316_000556,local-vllm-public-long-prompts,long-context,1,1,8,"In load testing an LLM API we often sweep concurrency: we run the same workload at concurrency 1, 2, 4, 8, 16, and sometimes higher. Each run uses the same number of requests, the same prompts (shuffled with the same seed), and the same generation parameters like max_tokens and temperature.
+
+Why run the same test at different concurrency levels? Give two reasons and mention what we learn about the system from the shape of the latency and throughput curves.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:06:25.874858Z,2026-03-16T00:06:29.869670Z,3994.7897921083495,,3994.7897921083495,96,False,24.031302019857623,True,200,,
+7765b8d8-5a9e-46b1-970e-64c9c1e950a3,20260316_000556,local-vllm-public-long-prompts,long-context,1,1,9,"You are helping a team debug production latency. Here is the context.
+
+Our chat API serves a Qwen-based model on a single GPU with vLLM. We run a benchmark with 24 requests over concurrency levels 1, 2, 4, 8, and 16. At concurrency 1 we see about 3.3 seconds p50 latency and ~29 tokens per second. At concurrency 16, p50 latency rises to about 24 seconds and tokens per second drop to around 5. We use max_tokens=96 and temperature 0.
+
+List four reasons response time matters for chat apps in this setup, and one thing we could try next to improve latency at high concurrency.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:06:29.871528Z,2026-03-16T00:06:33.353298Z,3481.74887499772,,3481.74887499772,96,False,27.572350403951194,True,200,,
+cf8ae43f-ebdd-4068-b303-e912f7c0afdc,20260316_000556,local-vllm-public-long-prompts,long-context,1,1,10,"We are designing a benchmark for our inference stack. The stack uses vLLM, a single public model (e.g. Qwen2-0.5B-Instruct), and we care about latency percentiles, time to first token, and token throughput under different concurrency levels. We run the same prompt set multiple times with a fixed seed and record per-request timings and any failures.
+
+What should this benchmark report include to be reproducible? List at least five items (e.g. model, config, metrics, hardware, software versions).",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:06:33.353720Z,2026-03-16T00:06:37.411856Z,4058.1130830105394,,4058.1130830105394,96,False,23.656314655672862,True,200,,
+17091679-3692-40f2-bd29-5647611dcb49,20260316_000556,local-vllm-public-long-prompts,long-context,1,1,11,"Incident summary for the team:
+
+Today between 14:00 and 14:02 UTC the model API returned 5xx errors for a subset of requests. The root cause was a transient OOM on the GPU when too many long-context requests were in flight. We increased the request timeout and added a simple queue limit. The API has been stable since 14:05.
+
+Draft a one-line status update for users: API had 5xx errors for 2 minutes, now fixed. Then add one short sentence on what we changed so it does not happen again.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:06:37.412324Z,2026-03-16T00:06:38.362457Z,950.1251250039786,,950.1251250039786,27,False,28.417309772633303,True,200,,
+68bfbb89-8bac-4fde-bc6e-ae97b300fc40,20260316_000556,local-vllm-public-long-prompts,long-context,1,1,12,"Background: In serving LLMs, throughput is often measured in requests per second or tokens per second, while latency is measured as time to first token (TTFT) and total time to completion. Increasing concurrency usually increases total throughput but can increase latency because the GPU is shared across more in-flight requests.
+
+Explain the trade-off between throughput and latency in one sentence, then in one more sentence say what a good benchmark should report so we can reason about both.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:06:38.362809Z,2026-03-16T00:06:41.619643Z,3256.819457979873,,3256.819457979873,73,False,22.41450622051987,True,200,,
+11373579-ac73-4aa3-bf09-5e9379f595e3,20260316_000556,local-vllm-public-long-prompts,long-context,1,1,13,"Consider the following operational scenario.
+
+We have an inference service that uses the vLLM engine and the Qwen2-0.5B-Instruct model. Requests are sent with a fixed max_tokens value and temperature set to zero for reproducibility. The workload consists of a small set of prompts repeated and shuffled with a fixed seed so that runs are comparable. We collect per-request latency, time to first token, and token throughput.
+
+How would you reduce slow requests in this model API? Give three concrete steps and mention what you would measure before and after.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:06:41.620276Z,2026-03-16T00:06:44.781605Z,3161.309790913947,,3161.309790913947,96,False,30.367159927166146,True,200,,
+cfc97a35-c7c8-4c22-a068-51f1fbd586ab,20260316_000556,local-vllm-public-long-prompts,long-context,1,1,14,"In load testing an LLM API we often sweep concurrency: we run the same workload at concurrency 1, 2, 4, 8, 16, and sometimes higher. Each run uses the same number of requests, the same prompts (shuffled with the same seed), and the same generation parameters like max_tokens and temperature.
+
+Why run the same test at different concurrency levels? Give two reasons and mention what we learn about the system from the shape of the latency and throughput curves.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:06:44.782149Z,2026-03-16T00:06:48.804720Z,4022.546499967575,,4022.546499967575,96,False,23.865479243253954,True,200,,
+d1a89acb-9fb9-4639-a8ea-3793e01f6058,20260316_000556,local-vllm-public-long-prompts,long-context,1,1,15,"You are helping a team debug production latency. Here is the context.
+
+Our chat API serves a Qwen-based model on a single GPU with vLLM. We run a benchmark with 24 requests over concurrency levels 1, 2, 4, 8, and 16. At concurrency 1 we see about 3.3 seconds p50 latency and ~29 tokens per second. At concurrency 16, p50 latency rises to about 24 seconds and tokens per second drop to around 5. We use max_tokens=96 and temperature 0.
+
+List four reasons response time matters for chat apps in this setup, and one thing we could try next to improve latency at high concurrency.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:06:48.805304Z,2026-03-16T00:06:52.365894Z,3560.5664160102606,,3560.5664160102606,96,False,26.96200232871133,True,200,,
+adde0d12-8ac6-40db-8e9e-dc31d4c336b6,20260316_000556,local-vllm-public-long-prompts,long-context,1,1,16,"We are designing a benchmark for our inference stack. The stack uses vLLM, a single public model (e.g. Qwen2-0.5B-Instruct), and we care about latency percentiles, time to first token, and token throughput under different concurrency levels. We run the same prompt set multiple times with a fixed seed and record per-request timings and any failures.
+
+What should this benchmark report include to be reproducible? List at least five items (e.g. model, config, metrics, hardware, software versions).",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:06:52.366489Z,2026-03-16T00:06:57.346195Z,4979.684874997474,,4979.684874997474,96,False,19.278328329972627,True,200,,
+308d6db7-a1a9-4015-b57e-01f9ebbb744b,20260316_000556,local-vllm-public-long-prompts,long-context,1,1,17,"Incident summary for the team:
+
+Today between 14:00 and 14:02 UTC the model API returned 5xx errors for a subset of requests. The root cause was a transient OOM on the GPU when too many long-context requests were in flight. We increased the request timeout and added a simple queue limit. The API has been stable since 14:05.
+
+Draft a one-line status update for users: API had 5xx errors for 2 minutes, now fixed. Then add one short sentence on what we changed so it does not happen again.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:06:57.346903Z,2026-03-16T00:06:58.378835Z,1031.9256249349564,,1031.9256249349564,27,False,26.1646763561103,True,200,,
+aafc4237-4d82-4671-a88c-42889882f6b8,20260316_000556,local-vllm-public-long-prompts,long-context,1,1,18,"Background: In serving LLMs, throughput is often measured in requests per second or tokens per second, while latency is measured as time to first token (TTFT) and total time to completion. Increasing concurrency usually increases total throughput but can increase latency because the GPU is shared across more in-flight requests.
+
+Explain the trade-off between throughput and latency in one sentence, then in one more sentence say what a good benchmark should report so we can reason about both.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:06:58.379291Z,2026-03-16T00:07:01.795816Z,3416.506416979246,,3416.506416979246,73,False,21.366855814233773,True,200,,
+672d7a34-bebd-4df8-99d5-6c4cb1f5ffcc,20260316_000556,local-vllm-public-long-prompts,long-context,1,1,19,"Consider the following operational scenario.
+
+We have an inference service that uses the vLLM engine and the Qwen2-0.5B-Instruct model. Requests are sent with a fixed max_tokens value and temperature set to zero for reproducibility. The workload consists of a small set of prompts repeated and shuffled with a fixed seed so that runs are comparable. We collect per-request latency, time to first token, and token throughput.
+
+How would you reduce slow requests in this model API? Give three concrete steps and mention what you would measure before and after.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:07:01.796644Z,2026-03-16T00:07:04.873008Z,3076.342749991454,,3076.342749991454,96,False,31.20588562515236,True,200,,
+6468030b-0240-4128-9822-475c6c56e64d,20260316_000556,local-vllm-public-long-prompts,long-context,1,1,20,"In load testing an LLM API we often sweep concurrency: we run the same workload at concurrency 1, 2, 4, 8, 16, and sometimes higher. Each run uses the same number of requests, the same prompts (shuffled with the same seed), and the same generation parameters like max_tokens and temperature.
+
+Why run the same test at different concurrency levels? Give two reasons and mention what we learn about the system from the shape of the latency and throughput curves.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:07:04.873417Z,2026-03-16T00:07:08.910239Z,4036.7986659985036,,4036.7986659985036,96,False,23.781220700600475,True,200,,
+9a3f052a-1ec9-4da5-9e14-c6c58539341b,20260316_000556,local-vllm-public-long-prompts,long-context,1,1,21,"You are helping a team debug production latency. Here is the context.
+
+Our chat API serves a Qwen-based model on a single GPU with vLLM. We run a benchmark with 24 requests over concurrency levels 1, 2, 4, 8, and 16. At concurrency 1 we see about 3.3 seconds p50 latency and ~29 tokens per second. At concurrency 16, p50 latency rises to about 24 seconds and tokens per second drop to around 5. We use max_tokens=96 and temperature 0.
+
+List four reasons response time matters for chat apps in this setup, and one thing we could try next to improve latency at high concurrency.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:07:08.911364Z,2026-03-16T00:07:13.183999Z,4272.6184169296175,,4272.6184169296175,96,False,22.468657537872847,True,200,,
+b83dd98f-409f-4f63-8789-7f37e2c9928c,20260316_000556,local-vllm-public-long-prompts,long-context,1,1,22,"We are designing a benchmark for our inference stack. The stack uses vLLM, a single public model (e.g. Qwen2-0.5B-Instruct), and we care about latency percentiles, time to first token, and token throughput under different concurrency levels. We run the same prompt set multiple times with a fixed seed and record per-request timings and any failures.
+
+What should this benchmark report include to be reproducible? List at least five items (e.g. model, config, metrics, hardware, software versions).",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:07:13.184653Z,2026-03-16T00:07:17.534292Z,4349.611334037036,,4349.611334037036,96,False,22.070937522341527,True,200,,
+3910af5c-c878-426c-b90e-95bed0bd7aa7,20260316_000556,local-vllm-public-long-prompts,long-context,1,1,23,"Incident summary for the team:
+
+Today between 14:00 and 14:02 UTC the model API returned 5xx errors for a subset of requests. The root cause was a transient OOM on the GPU when too many long-context requests were in flight. We increased the request timeout and added a simple queue limit. The API has been stable since 14:05.
+
+Draft a one-line status update for users: API had 5xx errors for 2 minutes, now fixed. Then add one short sentence on what we changed so it does not happen again.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:07:17.534612Z,2026-03-16T00:07:18.617051Z,1082.4358749669045,,1082.4358749669045,27,False,24.943740894420674,True,200,,
+768fe0d0-e2f8-43b8-a2b8-dfa2f751a9f0,20260316_000556,local-vllm-public-long-prompts,long-context,1,2,0,"In load testing an LLM API we often sweep concurrency: we run the same workload at concurrency 1, 2, 4, 8, 16, and sometimes higher. Each run uses the same number of requests, the same prompts (shuffled with the same seed), and the same generation parameters like max_tokens and temperature.
+
+Why run the same test at different concurrency levels? Give two reasons and mention what we learn about the system from the shape of the latency and throughput curves.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:07:18.618187Z,2026-03-16T00:07:24.684865Z,6066.640499979258,,6066.640499979258,96,False,15.82424407715081,True,200,,
+ace259ff-7958-4f55-ae36-5b4b54730ec8,20260316_000556,local-vllm-public-long-prompts,long-context,1,2,1,"You are helping a team debug production latency. Here is the context.
+
+Our chat API serves a Qwen-based model on a single GPU with vLLM. We run a benchmark with 24 requests over concurrency levels 1, 2, 4, 8, and 16. At concurrency 1 we see about 3.3 seconds p50 latency and ~29 tokens per second. At concurrency 16, p50 latency rises to about 24 seconds and tokens per second drop to around 5. We use max_tokens=96 and temperature 0.
+
+List four reasons response time matters for chat apps in this setup, and one thing we could try next to improve latency at high concurrency.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:07:18.618525Z,2026-03-16T00:07:24.723334Z,6104.773083003238,,6104.773083003238,96,False,15.725400222865103,True,200,,
+ff6bf42d-f4b0-4e41-a892-71ff12f6067e,20260316_000556,local-vllm-public-long-prompts,long-context,1,2,2,"Consider the following operational scenario.
+
+We have an inference service that uses the vLLM engine and the Qwen2-0.5B-Instruct model. Requests are sent with a fixed max_tokens value and temperature set to zero for reproducibility. The workload consists of a small set of prompts repeated and shuffled with a fixed seed so that runs are comparable. We collect per-request latency, time to first token, and token throughput.
+
+How would you reduce slow requests in this model API? Give three concrete steps and mention what you would measure before and after.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:07:24.685378Z,2026-03-16T00:07:30.139845Z,5454.446249990724,,5454.446249990724,96,False,17.600320105851857,True,200,,
+0451b058-7508-4eb5-81b6-7304864fe202,20260316_000556,local-vllm-public-long-prompts,long-context,1,2,3,"We are designing a benchmark for our inference stack. The stack uses vLLM, a single public model (e.g. Qwen2-0.5B-Instruct), and we care about latency percentiles, time to first token, and token throughput under different concurrency levels. We run the same prompt set multiple times with a fixed seed and record per-request timings and any failures.
+
+What should this benchmark report include to be reproducible? List at least five items (e.g. model, config, metrics, hardware, software versions).",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:07:24.723813Z,2026-03-16T00:07:30.173683Z,5449.840250075795,,5449.840250075795,96,False,17.615195234147436,True,200,,
+b63a209a-04d8-4ce5-9fba-a3dee7d7a5aa,20260316_000556,local-vllm-public-long-prompts,long-context,1,2,4,"Incident summary for the team:
+
+Today between 14:00 and 14:02 UTC the model API returned 5xx errors for a subset of requests. The root cause was a transient OOM on the GPU when too many long-context requests were in flight. We increased the request timeout and added a simple queue limit. The API has been stable since 14:05.
+
+Draft a one-line status update for users: API had 5xx errors for 2 minutes, now fixed. Then add one short sentence on what we changed so it does not happen again.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:07:30.140740Z,2026-03-16T00:07:32.518395Z,2377.62704200577,,2377.62704200577,27,False,11.35586007518772,True,200,,
+c5be2694-a802-43b2-8a4e-3d828b7ced32,20260316_000556,local-vllm-public-long-prompts,long-context,1,2,5,"Background: In serving LLMs, throughput is often measured in requests per second or tokens per second, while latency is measured as time to first token (TTFT) and total time to completion. Increasing concurrency usually increases total throughput but can increase latency because the GPU is shared across more in-flight requests.
+
+Explain the trade-off between throughput and latency in one sentence, then in one more sentence say what a good benchmark should report so we can reason about both.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:07:30.174550Z,2026-03-16T00:07:35.644414Z,5469.822332961485,,5469.822332961485,73,False,13.345954503878037,True,200,,
+84204b6f-78c8-4476-83a8-34c9b44bb705,20260316_000556,local-vllm-public-long-prompts,long-context,1,2,6,"In load testing an LLM API we often sweep concurrency: we run the same workload at concurrency 1, 2, 4, 8, 16, and sometimes higher. Each run uses the same number of requests, the same prompts (shuffled with the same seed), and the same generation parameters like max_tokens and temperature.
+
+Why run the same test at different concurrency levels? Give two reasons and mention what we learn about the system from the shape of the latency and throughput curves.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:07:32.518849Z,2026-03-16T00:07:38.242188Z,5723.307083011605,,5723.307083011605,96,False,16.773518982574807,True,200,,
+848fe916-5b49-4426-aa83-461bc8bf0263,20260316_000556,local-vllm-public-long-prompts,long-context,1,2,7,"You are helping a team debug production latency. Here is the context.
+
+Our chat API serves a Qwen-based model on a single GPU with vLLM. We run a benchmark with 24 requests over concurrency levels 1, 2, 4, 8, and 16. At concurrency 1 we see about 3.3 seconds p50 latency and ~29 tokens per second. At concurrency 16, p50 latency rises to about 24 seconds and tokens per second drop to around 5. We use max_tokens=96 and temperature 0.
+
+List four reasons response time matters for chat apps in this setup, and one thing we could try next to improve latency at high concurrency.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:07:35.644921Z,2026-03-16T00:07:41.059840Z,5414.910708903335,,5414.910708903335,96,False,17.728824196889217,True,200,,
+ee98bbbe-9499-4a32-a458-bd5aab20969d,20260316_000556,local-vllm-public-long-prompts,long-context,1,2,8,"Consider the following operational scenario.
+
+We have an inference service that uses the vLLM engine and the Qwen2-0.5B-Instruct model. Requests are sent with a fixed max_tokens value and temperature set to zero for reproducibility. The workload consists of a small set of prompts repeated and shuffled with a fixed seed so that runs are comparable. We collect per-request latency, time to first token, and token throughput.
+
+How would you reduce slow requests in this model API? Give three concrete steps and mention what you would measure before and after.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:07:38.243468Z,2026-03-16T00:07:44.200340Z,5956.836708006449,,5956.836708006449,96,False,16.11593614291434,True,200,,
+438478e0-dfbf-468b-b328-d88bf00e7045,20260316_000556,local-vllm-public-long-prompts,long-context,1,2,9,"We are designing a benchmark for our inference stack. The stack uses vLLM, a single public model (e.g. Qwen2-0.5B-Instruct), and we care about latency percentiles, time to first token, and token throughput under different concurrency levels. We run the same prompt set multiple times with a fixed seed and record per-request timings and any failures.
+
+What should this benchmark report include to be reproducible? List at least five items (e.g. model, config, metrics, hardware, software versions).",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:07:41.063411Z,2026-03-16T00:07:47.176813Z,6113.354999921285,,6113.354999921285,96,False,15.703324933892452,True,200,,
+a23317e0-aafa-408e-b0f2-0404f2128fd4,20260316_000556,local-vllm-public-long-prompts,long-context,1,2,10,"Incident summary for the team:
+
+Today between 14:00 and 14:02 UTC the model API returned 5xx errors for a subset of requests. The root cause was a transient OOM on the GPU when too many long-context requests were in flight. We increased the request timeout and added a simple queue limit. The API has been stable since 14:05.
+
+Draft a one-line status update for users: API had 5xx errors for 2 minutes, now fixed. Then add one short sentence on what we changed so it does not happen again.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:07:44.200890Z,2026-03-16T00:07:45.525355Z,1324.4612499838695,,1324.4612499838695,27,False,20.385647371962623,True,200,,
+69695705-07fa-4791-b7b4-186b958c7e33,20260316_000556,local-vllm-public-long-prompts,long-context,1,2,11,"Background: In serving LLMs, throughput is often measured in requests per second or tokens per second, while latency is measured as time to first token (TTFT) and total time to completion. Increasing concurrency usually increases total throughput but can increase latency because the GPU is shared across more in-flight requests.
+
+Explain the trade-off between throughput and latency in one sentence, then in one more sentence say what a good benchmark should report so we can reason about both.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:07:45.525972Z,2026-03-16T00:07:50.494118Z,4968.116790987551,,4968.116790987551,73,False,14.693696438945675,True,200,,
+cdcd61bf-0bcb-46d1-8cb5-140c2d800456,20260316_000556,local-vllm-public-long-prompts,long-context,1,2,12,"In load testing an LLM API we often sweep concurrency: we run the same workload at concurrency 1, 2, 4, 8, 16, and sometimes higher. Each run uses the same number of requests, the same prompts (shuffled with the same seed), and the same generation parameters like max_tokens and temperature.
+
+Why run the same test at different concurrency levels? Give two reasons and mention what we learn about the system from the shape of the latency and throughput curves.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:07:47.177311Z,2026-03-16T00:07:52.683740Z,5506.399416946806,,5506.399416946806,96,False,17.434260163646133,True,200,,
+16049261-77e6-45ab-bbdf-794e571f6c96,20260316_000556,local-vllm-public-long-prompts,long-context,1,2,13,"You are helping a team debug production latency. Here is the context.
+
+Our chat API serves a Qwen-based model on a single GPU with vLLM. We run a benchmark with 24 requests over concurrency levels 1, 2, 4, 8, and 16. At concurrency 1 we see about 3.3 seconds p50 latency and ~29 tokens per second. At concurrency 16, p50 latency rises to about 24 seconds and tokens per second drop to around 5. We use max_tokens=96 and temperature 0.
+
+List four reasons response time matters for chat apps in this setup, and one thing we could try next to improve latency at high concurrency.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:07:50.494701Z,2026-03-16T00:07:55.102182Z,4607.451124931686,,4607.451124931686,96,False,20.83581516047517,True,200,,
+ed98fcd5-b9d5-45ec-8be2-f08f4fd860dc,20260316_000556,local-vllm-public-long-prompts,long-context,1,2,14,"Consider the following operational scenario.
+
+We have an inference service that uses the vLLM engine and the Qwen2-0.5B-Instruct model. Requests are sent with a fixed max_tokens value and temperature set to zero for reproducibility. The workload consists of a small set of prompts repeated and shuffled with a fixed seed so that runs are comparable. We collect per-request latency, time to first token, and token throughput.
+
+How would you reduce slow requests in this model API? Give three concrete steps and mention what you would measure before and after.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:07:52.684454Z,2026-03-16T00:07:57.863654Z,5179.169665905647,,5179.169665905647,96,False,18.535789748686117,True,200,,
+18896690-73ef-45e8-9ee5-71e38d1ed3c1,20260316_000556,local-vllm-public-long-prompts,long-context,1,2,15,"We are designing a benchmark for our inference stack. The stack uses vLLM, a single public model (e.g. Qwen2-0.5B-Instruct), and we care about latency percentiles, time to first token, and token throughput under different concurrency levels. We run the same prompt set multiple times with a fixed seed and record per-request timings and any failures.
+
+What should this benchmark report include to be reproducible? List at least five items (e.g. model, config, metrics, hardware, software versions).",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:07:55.103009Z,2026-03-16T00:08:01.121645Z,6018.596709007397,,6018.596709007397,96,False,15.950562006643002,True,200,,
+3d5ea089-2c89-4b6e-88cd-7706f162d13a,20260316_000556,local-vllm-public-long-prompts,long-context,1,2,16,"Incident summary for the team:
+
+Today between 14:00 and 14:02 UTC the model API returned 5xx errors for a subset of requests. The root cause was a transient OOM on the GPU when too many long-context requests were in flight. We increased the request timeout and added a simple queue limit. The API has been stable since 14:05.
+
+Draft a one-line status update for users: API had 5xx errors for 2 minutes, now fixed. Then add one short sentence on what we changed so it does not happen again.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:07:57.864346Z,2026-03-16T00:07:59.225421Z,1361.0706250183284,,1361.0706250183284,27,False,19.837324752810982,True,200,,
+801e2b7d-7474-42bd-a251-b6bbb0e58463,20260316_000556,local-vllm-public-long-prompts,long-context,1,2,17,"Background: In serving LLMs, throughput is often measured in requests per second or tokens per second, while latency is measured as time to first token (TTFT) and total time to completion. Increasing concurrency usually increases total throughput but can increase latency because the GPU is shared across more in-flight requests.
+
+Explain the trade-off between throughput and latency in one sentence, then in one more sentence say what a good benchmark should report so we can reason about both.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:07:59.226075Z,2026-03-16T00:08:04.067874Z,4841.768249985762,,4841.768249985762,73,False,15.077136333448976,True,200,,
+07ed41f2-7670-4cb1-9226-baa3f8aaf90f,20260316_000556,local-vllm-public-long-prompts,long-context,1,2,18,"In load testing an LLM API we often sweep concurrency: we run the same workload at concurrency 1, 2, 4, 8, 16, and sometimes higher. Each run uses the same number of requests, the same prompts (shuffled with the same seed), and the same generation parameters like max_tokens and temperature.
+
+Why run the same test at different concurrency levels? Give two reasons and mention what we learn about the system from the shape of the latency and throughput curves.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:01.122195Z,2026-03-16T00:08:06.588627Z,5466.399291995913,,5466.399291995913,96,False,17.561834559097512,True,200,,
+4e9bf4c0-e8d7-4531-be04-bff6dc35afef,20260316_000556,local-vllm-public-long-prompts,long-context,1,2,19,"You are helping a team debug production latency. Here is the context.
+
+Our chat API serves a Qwen-based model on a single GPU with vLLM. We run a benchmark with 24 requests over concurrency levels 1, 2, 4, 8, and 16. At concurrency 1 we see about 3.3 seconds p50 latency and ~29 tokens per second. At concurrency 16, p50 latency rises to about 24 seconds and tokens per second drop to around 5. We use max_tokens=96 and temperature 0.
+
+List four reasons response time matters for chat apps in this setup, and one thing we could try next to improve latency at high concurrency.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:04.068413Z,2026-03-16T00:08:08.775976Z,4707.542791962624,,4707.542791962624,96,False,20.392804535713335,True,200,,
+4fd1329b-6747-42fc-9ef0-f69a3a5f1122,20260316_000556,local-vllm-public-long-prompts,long-context,1,2,20,"Consider the following operational scenario.
+
+We have an inference service that uses the vLLM engine and the Qwen2-0.5B-Instruct model. Requests are sent with a fixed max_tokens value and temperature set to zero for reproducibility. The workload consists of a small set of prompts repeated and shuffled with a fixed seed so that runs are comparable. We collect per-request latency, time to first token, and token throughput.
+
+How would you reduce slow requests in this model API? Give three concrete steps and mention what you would measure before and after.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:06.589080Z,2026-03-16T00:08:11.826915Z,5237.807166995481,,5237.807166995481,96,False,18.328280698250232,True,200,,
+bfe09113-8090-417f-8d5d-3cd3784f4043,20260316_000556,local-vllm-public-long-prompts,long-context,1,2,21,"We are designing a benchmark for our inference stack. The stack uses vLLM, a single public model (e.g. Qwen2-0.5B-Instruct), and we care about latency percentiles, time to first token, and token throughput under different concurrency levels. We run the same prompt set multiple times with a fixed seed and record per-request timings and any failures.
+
+What should this benchmark report include to be reproducible? List at least five items (e.g. model, config, metrics, hardware, software versions).",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:08.776520Z,2026-03-16T00:08:14.843490Z,6066.936915973201,,6066.936915973201,96,False,15.823470942519364,True,200,,
+e2b7b58a-678e-45b1-9393-6030ac09f01c,20260316_000556,local-vllm-public-long-prompts,long-context,1,2,22,"Incident summary for the team:
+
+Today between 14:00 and 14:02 UTC the model API returned 5xx errors for a subset of requests. The root cause was a transient OOM on the GPU when too many long-context requests were in flight. We increased the request timeout and added a simple queue limit. The API has been stable since 14:05.
+
+Draft a one-line status update for users: API had 5xx errors for 2 minutes, now fixed. Then add one short sentence on what we changed so it does not happen again.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:11.827582Z,2026-03-16T00:08:13.153086Z,1325.4986670799553,,1325.4986670799553,27,False,20.36969230567422,True,200,,
+e2bcd558-f2b1-48bd-b1b9-4739dd091c7b,20260316_000556,local-vllm-public-long-prompts,long-context,1,2,23,"Background: In serving LLMs, throughput is often measured in requests per second or tokens per second, while latency is measured as time to first token (TTFT) and total time to completion. Increasing concurrency usually increases total throughput but can increase latency because the GPU is shared across more in-flight requests.
+
+Explain the trade-off between throughput and latency in one sentence, then in one more sentence say what a good benchmark should report so we can reason about both.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:13.153656Z,2026-03-16T00:08:16.592979Z,3439.301499980502,,3439.301499980502,73,False,21.22524006703508,True,200,,
+d12bd298-3a62-4158-9134-afe2ab4faec1,20260316_000556,local-vllm-public-long-prompts,long-context,1,4,0,"We are designing a benchmark for our inference stack. The stack uses vLLM, a single public model (e.g. Qwen2-0.5B-Instruct), and we care about latency percentiles, time to first token, and token throughput under different concurrency levels. We run the same prompt set multiple times with a fixed seed and record per-request timings and any failures.
+
+What should this benchmark report include to be reproducible? List at least five items (e.g. model, config, metrics, hardware, software versions).",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:16.593717Z,2026-03-16T00:08:25.610555Z,9016.78774994798,,9016.78774994798,96,False,10.646807118261583,True,200,,
+1ae059fb-b87e-4e84-94d0-4ffba34cee37,20260316_000556,local-vllm-public-long-prompts,long-context,1,4,1,"Consider the following operational scenario.
+
+We have an inference service that uses the vLLM engine and the Qwen2-0.5B-Instruct model. Requests are sent with a fixed max_tokens value and temperature set to zero for reproducibility. The workload consists of a small set of prompts repeated and shuffled with a fixed seed so that runs are comparable. We collect per-request latency, time to first token, and token throughput.
+
+How would you reduce slow requests in this model API? Give three concrete steps and mention what you would measure before and after.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:16.593968Z,2026-03-16T00:08:25.668700Z,9074.680291931145,,9074.680291931145,96,False,10.57888508594176,True,200,,
+ecbdc686-81ab-43df-939e-3b7c9ef295b6,20260316_000556,local-vllm-public-long-prompts,long-context,1,4,2,"In load testing an LLM API we often sweep concurrency: we run the same workload at concurrency 1, 2, 4, 8, 16, and sometimes higher. Each run uses the same number of requests, the same prompts (shuffled with the same seed), and the same generation parameters like max_tokens and temperature.
+
+Why run the same test at different concurrency levels? Give two reasons and mention what we learn about the system from the shape of the latency and throughput curves.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:16.594126Z,2026-03-16T00:08:25.670124Z,9075.940917013213,,9075.940917013213,96,False,10.577415705741778,True,200,,
+3212b69d-648d-415c-8029-cf7a314e73e3,20260316_000556,local-vllm-public-long-prompts,long-context,1,4,3,"Incident summary for the team:
+
+Today between 14:00 and 14:02 UTC the model API returned 5xx errors for a subset of requests. The root cause was a transient OOM on the GPU when too many long-context requests were in flight. We increased the request timeout and added a simple queue limit. The API has been stable since 14:05.
+
+Draft a one-line status update for users: API had 5xx errors for 2 minutes, now fixed. Then add one short sentence on what we changed so it does not happen again.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:16.594259Z,2026-03-16T00:08:20.365333Z,3771.062207990326,,3771.062207990326,27,False,7.159786423780274,True,200,,
+3df12ffa-9346-412e-a1c6-e46f4ea9427a,20260316_000556,local-vllm-public-long-prompts,long-context,1,4,4,"You are helping a team debug production latency. Here is the context.
+
+Our chat API serves a Qwen-based model on a single GPU with vLLM. We run a benchmark with 24 requests over concurrency levels 1, 2, 4, 8, and 16. At concurrency 1 we see about 3.3 seconds p50 latency and ~29 tokens per second. At concurrency 16, p50 latency rises to about 24 seconds and tokens per second drop to around 5. We use max_tokens=96 and temperature 0.
+
+List four reasons response time matters for chat apps in this setup, and one thing we could try next to improve latency at high concurrency.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:20.366383Z,2026-03-16T00:08:29.332800Z,8966.361916041933,,8966.361916041933,96,False,10.706683591284008,True,200,,
+540df294-f48c-4e3d-84af-59879489d1d2,20260316_000556,local-vllm-public-long-prompts,long-context,1,4,5,"Background: In serving LLMs, throughput is often measured in requests per second or tokens per second, while latency is measured as time to first token (TTFT) and total time to completion. Increasing concurrency usually increases total throughput but can increase latency because the GPU is shared across more in-flight requests.
+
+Explain the trade-off between throughput and latency in one sentence, then in one more sentence say what a good benchmark should report so we can reason about both.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:25.611059Z,2026-03-16T00:08:33.351110Z,7740.006042062305,,7740.006042062305,73,False,9.43151718529529,True,200,,
+f426ab18-28ef-4b54-8b46-f8580433e7ef,20260316_000556,local-vllm-public-long-prompts,long-context,1,4,6,"We are designing a benchmark for our inference stack. The stack uses vLLM, a single public model (e.g. Qwen2-0.5B-Instruct), and we care about latency percentiles, time to first token, and token throughput under different concurrency levels. We run the same prompt set multiple times with a fixed seed and record per-request timings and any failures.
+
+What should this benchmark report include to be reproducible? List at least five items (e.g. model, config, metrics, hardware, software versions).",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:25.669747Z,2026-03-16T00:08:35.129600Z,9459.791374974884,,9459.791374974884,96,False,10.1482153458437,True,200,,
+df8a9b53-fe6f-4509-bd8b-0d6e2efb7ee8,20260316_000556,local-vllm-public-long-prompts,long-context,1,4,7,"Consider the following operational scenario.
+
+We have an inference service that uses the vLLM engine and the Qwen2-0.5B-Instruct model. Requests are sent with a fixed max_tokens value and temperature set to zero for reproducibility. The workload consists of a small set of prompts repeated and shuffled with a fixed seed so that runs are comparable. We collect per-request latency, time to first token, and token throughput.
+
+How would you reduce slow requests in this model API? Give three concrete steps and mention what you would measure before and after.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:25.670610Z,2026-03-16T00:08:35.130725Z,9460.052459035069,,9460.052459035069,96,False,10.147935269461716,True,200,,
+aacc8639-e990-4fab-bdbb-5e83594d11a1,20260316_000556,local-vllm-public-long-prompts,long-context,1,4,8,"In load testing an LLM API we often sweep concurrency: we run the same workload at concurrency 1, 2, 4, 8, 16, and sometimes higher. Each run uses the same number of requests, the same prompts (shuffled with the same seed), and the same generation parameters like max_tokens and temperature.
+
+Why run the same test at different concurrency levels? Give two reasons and mention what we learn about the system from the shape of the latency and throughput curves.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:29.333238Z,2026-03-16T00:08:39.101003Z,9767.708540894091,,9767.708540894091,96,False,9.828303086448626,True,200,,
+95f27c09-e2be-4297-8f64-192819a2556f,20260316_000556,local-vllm-public-long-prompts,long-context,1,4,9,"Incident summary for the team:
+
+Today between 14:00 and 14:02 UTC the model API returned 5xx errors for a subset of requests. The root cause was a transient OOM on the GPU when too many long-context requests were in flight. We increased the request timeout and added a simple queue limit. The API has been stable since 14:05.
+
+Draft a one-line status update for users: API had 5xx errors for 2 minutes, now fixed. Then add one short sentence on what we changed so it does not happen again.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:33.351728Z,2026-03-16T00:08:36.469298Z,3117.5539169926196,,3117.5539169926196,27,False,8.660636100897278,True,200,,
+9c41b0a8-4aee-4db0-8d55-753709319514,20260316_000556,local-vllm-public-long-prompts,long-context,1,4,10,"You are helping a team debug production latency. Here is the context.
+
+Our chat API serves a Qwen-based model on a single GPU with vLLM. We run a benchmark with 24 requests over concurrency levels 1, 2, 4, 8, and 16. At concurrency 1 we see about 3.3 seconds p50 latency and ~29 tokens per second. At concurrency 16, p50 latency rises to about 24 seconds and tokens per second drop to around 5. We use max_tokens=96 and temperature 0.
+
+List four reasons response time matters for chat apps in this setup, and one thing we could try next to improve latency at high concurrency.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:35.130284Z,2026-03-16T00:08:44.495613Z,9365.265207947232,,9365.265207947232,96,False,10.250644041402667,True,200,,
+790654a8-87e9-4923-809d-9e200ee1c221,20260316_000556,local-vllm-public-long-prompts,long-context,1,4,11,"Background: In serving LLMs, throughput is often measured in requests per second or tokens per second, while latency is measured as time to first token (TTFT) and total time to completion. Increasing concurrency usually increases total throughput but can increase latency because the GPU is shared across more in-flight requests.
+
+Explain the trade-off between throughput and latency in one sentence, then in one more sentence say what a good benchmark should report so we can reason about both.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:35.131126Z,2026-03-16T00:08:42.307992Z,7176.825125003234,,7176.825125003234,73,False,10.171628641984935,True,200,,
+36e16b81-b5c8-4df8-894f-7fa92ffec6ce,20260316_000556,local-vllm-public-long-prompts,long-context,1,4,12,"We are designing a benchmark for our inference stack. The stack uses vLLM, a single public model (e.g. Qwen2-0.5B-Instruct), and we care about latency percentiles, time to first token, and token throughput under different concurrency levels. We run the same prompt set multiple times with a fixed seed and record per-request timings and any failures.
+
+What should this benchmark report include to be reproducible? List at least five items (e.g. model, config, metrics, hardware, software versions).",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:36.469903Z,2026-03-16T00:08:44.778988Z,8309.03054191731,,8309.03054191731,96,False,11.553694443136322,True,200,,
+d96fd3b9-a389-4424-b44e-6623d643767b,20260316_000556,local-vllm-public-long-prompts,long-context,1,4,13,"Consider the following operational scenario.
+
+We have an inference service that uses the vLLM engine and the Qwen2-0.5B-Instruct model. Requests are sent with a fixed max_tokens value and temperature set to zero for reproducibility. The workload consists of a small set of prompts repeated and shuffled with a fixed seed so that runs are comparable. We collect per-request latency, time to first token, and token throughput.
+
+How would you reduce slow requests in this model API? Give three concrete steps and mention what you would measure before and after.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:39.101626Z,2026-03-16T00:08:46.396091Z,7294.458499993198,,7294.458499993198,96,False,13.160675326357607,True,200,,
+1eaa9f24-db9c-4f3b-937c-e09575695ee0,20260316_000556,local-vllm-public-long-prompts,long-context,1,4,14,"In load testing an LLM API we often sweep concurrency: we run the same workload at concurrency 1, 2, 4, 8, 16, and sometimes higher. Each run uses the same number of requests, the same prompts (shuffled with the same seed), and the same generation parameters like max_tokens and temperature.
+
+Why run the same test at different concurrency levels? Give two reasons and mention what we learn about the system from the shape of the latency and throughput curves.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:42.308560Z,2026-03-16T00:08:50.650461Z,8341.838583000936,,8341.838583000936,96,False,11.508254330841352,True,200,,
+e28df38b-a30e-462a-b778-8de9c569d335,20260316_000556,local-vllm-public-long-prompts,long-context,1,4,15,"Incident summary for the team:
+
+Today between 14:00 and 14:02 UTC the model API returned 5xx errors for a subset of requests. The root cause was a transient OOM on the GPU when too many long-context requests were in flight. We increased the request timeout and added a simple queue limit. The API has been stable since 14:05.
+
+Draft a one-line status update for users: API had 5xx errors for 2 minutes, now fixed. Then add one short sentence on what we changed so it does not happen again.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:44.496091Z,2026-03-16T00:08:46.400836Z,1904.7346250154078,,1904.7346250154078,27,False,14.175203015371022,True,200,,
+f2386bbe-3816-4333-ba76-c0224613ed1d,20260316_000556,local-vllm-public-long-prompts,long-context,1,4,16,"You are helping a team debug production latency. Here is the context.
+
+Our chat API serves a Qwen-based model on a single GPU with vLLM. We run a benchmark with 24 requests over concurrency levels 1, 2, 4, 8, and 16. At concurrency 1 we see about 3.3 seconds p50 latency and ~29 tokens per second. At concurrency 16, p50 latency rises to about 24 seconds and tokens per second drop to around 5. We use max_tokens=96 and temperature 0.
+
+List four reasons response time matters for chat apps in this setup, and one thing we could try next to improve latency at high concurrency.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:44.779328Z,2026-03-16T00:08:51.850410Z,7071.038541034795,,7071.038541034795,96,False,13.57650639900926,True,200,,
+2db45251-0621-4c82-aecc-413ede4f12a0,20260316_000556,local-vllm-public-long-prompts,long-context,1,4,17,"Background: In serving LLMs, throughput is often measured in requests per second or tokens per second, while latency is measured as time to first token (TTFT) and total time to completion. Increasing concurrency usually increases total throughput but can increase latency because the GPU is shared across more in-flight requests.
+
+Explain the trade-off between throughput and latency in one sentence, then in one more sentence say what a good benchmark should report so we can reason about both.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:46.401414Z,2026-03-16T00:08:52.677346Z,6275.892540928908,,6275.892540928908,73,False,11.63181165450534,True,200,,
+5e7f2b63-3918-44ea-aa65-c3e74b7ca8bc,20260316_000556,local-vllm-public-long-prompts,long-context,1,4,18,"We are designing a benchmark for our inference stack. The stack uses vLLM, a single public model (e.g. Qwen2-0.5B-Instruct), and we care about latency percentiles, time to first token, and token throughput under different concurrency levels. We run the same prompt set multiple times with a fixed seed and record per-request timings and any failures.
+
+What should this benchmark report include to be reproducible? List at least five items (e.g. model, config, metrics, hardware, software versions).",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:46.403353Z,2026-03-16T00:08:53.735974Z,7332.575707929209,,7332.575707929209,96,False,13.092261685916004,True,200,,
+19cde305-8c3f-4104-bc1c-fb1a36d9fac7,20260316_000556,local-vllm-public-long-prompts,long-context,1,4,19,"Consider the following operational scenario.
+
+We have an inference service that uses the vLLM engine and the Qwen2-0.5B-Instruct model. Requests are sent with a fixed max_tokens value and temperature set to zero for reproducibility. The workload consists of a small set of prompts repeated and shuffled with a fixed seed so that runs are comparable. We collect per-request latency, time to first token, and token throughput.
+
+How would you reduce slow requests in this model API? Give three concrete steps and mention what you would measure before and after.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:50.651119Z,2026-03-16T00:08:56.595208Z,5944.055709056556,,5944.055709056556,96,False,16.150588873810737,True,200,,
+84519651-2d7a-4f33-963a-f141873b5018,20260316_000556,local-vllm-public-long-prompts,long-context,1,4,20,"In load testing an LLM API we often sweep concurrency: we run the same workload at concurrency 1, 2, 4, 8, 16, and sometimes higher. Each run uses the same number of requests, the same prompts (shuffled with the same seed), and the same generation parameters like max_tokens and temperature.
+
+Why run the same test at different concurrency levels? Give two reasons and mention what we learn about the system from the shape of the latency and throughput curves.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:51.850785Z,2026-03-16T00:08:57.539568Z,5688.750292058103,,5688.750292058103,96,False,16.8754111309865,True,200,,
+7d1fc921-c1b6-409e-bbda-8b33ce77be66,20260316_000556,local-vllm-public-long-prompts,long-context,1,4,21,"Incident summary for the team:
+
+Today between 14:00 and 14:02 UTC the model API returned 5xx errors for a subset of requests. The root cause was a transient OOM on the GPU when too many long-context requests were in flight. We increased the request timeout and added a simple queue limit. The API has been stable since 14:05.
+
+Draft a one-line status update for users: API had 5xx errors for 2 minutes, now fixed. Then add one short sentence on what we changed so it does not happen again.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:52.677656Z,2026-03-16T00:08:54.199545Z,1521.8818749999627,,1521.8818749999627,27,False,17.74119295559694,True,200,,
+8a5b297d-60da-4afe-9502-334584b50251,20260316_000556,local-vllm-public-long-prompts,long-context,1,4,22,"You are helping a team debug production latency. Here is the context.
+
+Our chat API serves a Qwen-based model on a single GPU with vLLM. We run a benchmark with 24 requests over concurrency levels 1, 2, 4, 8, and 16. At concurrency 1 we see about 3.3 seconds p50 latency and ~29 tokens per second. At concurrency 16, p50 latency rises to about 24 seconds and tokens per second drop to around 5. We use max_tokens=96 and temperature 0.
+
+List four reasons response time matters for chat apps in this setup, and one thing we could try next to improve latency at high concurrency.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:53.736327Z,2026-03-16T00:08:58.153165Z,4416.814291966148,,4416.814291966148,96,False,21.73512256891053,True,200,,
+403d4be9-a9b3-4ca8-93ea-850c7beeaf8a,20260316_000556,local-vllm-public-long-prompts,long-context,1,4,23,"Background: In serving LLMs, throughput is often measured in requests per second or tokens per second, while latency is measured as time to first token (TTFT) and total time to completion. Increasing concurrency usually increases total throughput but can increase latency because the GPU is shared across more in-flight requests.
+
+Explain the trade-off between throughput and latency in one sentence, then in one more sentence say what a good benchmark should report so we can reason about both.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:54.199963Z,2026-03-16T00:08:57.728072Z,3528.0922499950975,,3528.0922499950975,73,False,20.69106894812669,True,200,,
+4b4ee0cf-4eb5-4a3f-97f0-2541b89010b0,20260316_000556,local-vllm-public-long-prompts,long-context,1,8,0,"Incident summary for the team:
+
+Today between 14:00 and 14:02 UTC the model API returned 5xx errors for a subset of requests. The root cause was a transient OOM on the GPU when too many long-context requests were in flight. We increased the request timeout and added a simple queue limit. The API has been stable since 14:05.
+
+Draft a one-line status update for users: API had 5xx errors for 2 minutes, now fixed. Then add one short sentence on what we changed so it does not happen again.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:58.153767Z,2026-03-16T00:09:04.596967Z,6443.16691707354,,6443.16691707354,27,False,4.190485881787971,True,200,,
+826816f9-d928-4e1a-bb44-a306e1c230f5,20260316_000556,local-vllm-public-long-prompts,long-context,1,8,1,"Background: In serving LLMs, throughput is often measured in requests per second or tokens per second, while latency is measured as time to first token (TTFT) and total time to completion. Increasing concurrency usually increases total throughput but can increase latency because the GPU is shared across more in-flight requests.
+
+Explain the trade-off between throughput and latency in one sentence, then in one more sentence say what a good benchmark should report so we can reason about both.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:58.153984Z,2026-03-16T00:09:11.014600Z,12860.570749966428,,12860.570749966428,73,False,5.676264406864724,True,200,,
+6b101ab6-8eea-4ddd-bf9e-0b567b7b1ac0,20260316_000556,local-vllm-public-long-prompts,long-context,1,8,2,"You are helping a team debug production latency. Here is the context.
+
+Our chat API serves a Qwen-based model on a single GPU with vLLM. We run a benchmark with 24 requests over concurrency levels 1, 2, 4, 8, and 16. At concurrency 1 we see about 3.3 seconds p50 latency and ~29 tokens per second. At concurrency 16, p50 latency rises to about 24 seconds and tokens per second drop to around 5. We use max_tokens=96 and temperature 0.
+
+List four reasons response time matters for chat apps in this setup, and one thing we could try next to improve latency at high concurrency.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:58.154139Z,2026-03-16T00:09:15.097798Z,16943.549999967217,,16943.549999967217,96,False,5.665872854282942,True,200,,
+a42acad9-901e-41c7-b321-95c0a5ff84a2,20260316_000556,local-vllm-public-long-prompts,long-context,1,8,3,"In load testing an LLM API we often sweep concurrency: we run the same workload at concurrency 1, 2, 4, 8, 16, and sometimes higher. Each run uses the same number of requests, the same prompts (shuffled with the same seed), and the same generation parameters like max_tokens and temperature.
+
+Why run the same test at different concurrency levels? Give two reasons and mention what we learn about the system from the shape of the latency and throughput curves.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:58.154286Z,2026-03-16T00:09:15.096607Z,16942.21495895181,,16942.21495895181,96,False,5.66631932321672,True,200,,
+cc4f1dc2-ad7b-4c97-84ff-2e258f80d428,20260316_000556,local-vllm-public-long-prompts,long-context,1,8,4,"We are designing a benchmark for our inference stack. The stack uses vLLM, a single public model (e.g. Qwen2-0.5B-Instruct), and we care about latency percentiles, time to first token, and token throughput under different concurrency levels. We run the same prompt set multiple times with a fixed seed and record per-request timings and any failures.
+
+What should this benchmark report include to be reproducible? List at least five items (e.g. model, config, metrics, hardware, software versions).",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:58.154424Z,2026-03-16T00:09:15.093773Z,16939.29145799484,,16939.29145799484,96,False,5.667297256089826,True,200,,
+7f70132a-5556-4880-b26f-38b7a7228054,20260316_000556,local-vllm-public-long-prompts,long-context,1,8,5,"Consider the following operational scenario.
+
+We have an inference service that uses the vLLM engine and the Qwen2-0.5B-Instruct model. Requests are sent with a fixed max_tokens value and temperature set to zero for reproducibility. The workload consists of a small set of prompts repeated and shuffled with a fixed seed so that runs are comparable. We collect per-request latency, time to first token, and token throughput.
+
+How would you reduce slow requests in this model API? Give three concrete steps and mention what you would measure before and after.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:58.154565Z,2026-03-16T00:09:15.096994Z,16942.32087500859,,16942.32087500859,96,False,5.666283899840925,True,200,,
+9622a4c7-9640-484f-90f1-ea75ea493d7a,20260316_000556,local-vllm-public-long-prompts,long-context,1,8,6,"Incident summary for the team:
+
+Today between 14:00 and 14:02 UTC the model API returned 5xx errors for a subset of requests. The root cause was a transient OOM on the GPU when too many long-context requests were in flight. We increased the request timeout and added a simple queue limit. The API has been stable since 14:05.
+
+Draft a one-line status update for users: API had 5xx errors for 2 minutes, now fixed. Then add one short sentence on what we changed so it does not happen again.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:58.154690Z,2026-03-16T00:09:04.697038Z,6542.310749995522,,6542.310749995522,27,False,4.126982198150475,True,200,,
+e5038bdb-c96a-4ae8-8fe0-0175a1ea7fcf,20260316_000556,local-vllm-public-long-prompts,long-context,1,8,7,"Background: In serving LLMs, throughput is often measured in requests per second or tokens per second, while latency is measured as time to first token (TTFT) and total time to completion. Increasing concurrency usually increases total throughput but can increase latency because the GPU is shared across more in-flight requests.
+
+Explain the trade-off between throughput and latency in one sentence, then in one more sentence say what a good benchmark should report so we can reason about both.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:08:58.154838Z,2026-03-16T00:09:11.016594Z,12861.67904199101,,12861.67904199101,73,False,5.675775282656989,True,200,,
+e5117125-53d4-4de9-adc6-fffbe078097a,20260316_000556,local-vllm-public-long-prompts,long-context,1,8,8,"You are helping a team debug production latency. Here is the context.
+
+Our chat API serves a Qwen-based model on a single GPU with vLLM. We run a benchmark with 24 requests over concurrency levels 1, 2, 4, 8, and 16. At concurrency 1 we see about 3.3 seconds p50 latency and ~29 tokens per second. At concurrency 16, p50 latency rises to about 24 seconds and tokens per second drop to around 5. We use max_tokens=96 and temperature 0.
+
+List four reasons response time matters for chat apps in this setup, and one thing we could try next to improve latency at high concurrency.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:04.598335Z,2026-03-16T00:09:20.196234Z,15597.809374914505,,15597.809374914505,96,False,6.154710427118949,True,200,,
+42fd5785-258c-4695-b9c7-0c41a468b37c,20260316_000556,local-vllm-public-long-prompts,long-context,1,8,9,"In load testing an LLM API we often sweep concurrency: we run the same workload at concurrency 1, 2, 4, 8, 16, and sometimes higher. Each run uses the same number of requests, the same prompts (shuffled with the same seed), and the same generation parameters like max_tokens and temperature.
+
+Why run the same test at different concurrency levels? Give two reasons and mention what we learn about the system from the shape of the latency and throughput curves.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:04.697449Z,2026-03-16T00:09:20.297635Z,15600.087000057101,,15600.087000057101,96,False,6.153811834488398,True,200,,
+bebfe385-6288-4b97-b9cb-d2cd3cb8018e,20260316_000556,local-vllm-public-long-prompts,long-context,1,8,10,"We are designing a benchmark for our inference stack. The stack uses vLLM, a single public model (e.g. Qwen2-0.5B-Instruct), and we care about latency percentiles, time to first token, and token throughput under different concurrency levels. We run the same prompt set multiple times with a fixed seed and record per-request timings and any failures.
+
+What should this benchmark report include to be reproducible? List at least five items (e.g. model, config, metrics, hardware, software versions).",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:11.017321Z,2026-03-16T00:09:28.068705Z,17051.274916972034,,17051.274916972034,96,False,5.630077543612069,True,200,,
+db14eb12-5f3d-4c1d-922d-acf070f21d64,20260316_000556,local-vllm-public-long-prompts,long-context,1,8,11,"Consider the following operational scenario.
+
+We have an inference service that uses the vLLM engine and the Qwen2-0.5B-Instruct model. Requests are sent with a fixed max_tokens value and temperature set to zero for reproducibility. The workload consists of a small set of prompts repeated and shuffled with a fixed seed so that runs are comparable. We collect per-request latency, time to first token, and token throughput.
+
+How would you reduce slow requests in this model API? Give three concrete steps and mention what you would measure before and after.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:11.018471Z,2026-03-16T00:09:28.069828Z,17051.245459006168,,17051.245459006168,96,False,5.630087270211367,True,200,,
+d50b70de-f008-432e-b2b5-d9e95ee8cd92,20260316_000556,local-vllm-public-long-prompts,long-context,1,8,12,"Incident summary for the team:
+
+Today between 14:00 and 14:02 UTC the model API returned 5xx errors for a subset of requests. The root cause was a transient OOM on the GPU when too many long-context requests were in flight. We increased the request timeout and added a simple queue limit. The API has been stable since 14:05.
+
+Draft a one-line status update for users: API had 5xx errors for 2 minutes, now fixed. Then add one short sentence on what we changed so it does not happen again.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:15.098175Z,2026-03-16T00:09:20.298120Z,5199.914166936651,,5199.914166936651,27,False,5.192393399813773,True,200,,
+7748f804-9c5b-45f1-add5-6fc1404b6633,20260316_000556,local-vllm-public-long-prompts,long-context,1,8,13,"Background: In serving LLMs, throughput is often measured in requests per second or tokens per second, while latency is measured as time to first token (TTFT) and total time to completion. Increasing concurrency usually increases total throughput but can increase latency because the GPU is shared across more in-flight requests.
+
+Explain the trade-off between throughput and latency in one sentence, then in one more sentence say what a good benchmark should report so we can reason about both.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:15.099833Z,2026-03-16T00:09:28.070691Z,12970.776541042142,,12970.776541042142,73,False,5.6280362065457945,True,200,,
+66cd11b3-584d-4d8c-8f66-267f3d08dcf8,20260316_000556,local-vllm-public-long-prompts,long-context,1,8,14,"You are helping a team debug production latency. Here is the context.
+
+Our chat API serves a Qwen-based model on a single GPU with vLLM. We run a benchmark with 24 requests over concurrency levels 1, 2, 4, 8, and 16. At concurrency 1 we see about 3.3 seconds p50 latency and ~29 tokens per second. At concurrency 16, p50 latency rises to about 24 seconds and tokens per second drop to around 5. We use max_tokens=96 and temperature 0.
+
+List four reasons response time matters for chat apps in this setup, and one thing we could try next to improve latency at high concurrency.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:15.100548Z,2026-03-16T00:09:33.682928Z,18582.280082977377,,18582.280082977377,96,False,5.166212088684557,True,200,,
+be77347c-b2fe-42a4-90b2-3bb630a4d561,20260316_000556,local-vllm-public-long-prompts,long-context,1,8,15,"In load testing an LLM API we often sweep concurrency: we run the same workload at concurrency 1, 2, 4, 8, 16, and sometimes higher. Each run uses the same number of requests, the same prompts (shuffled with the same seed), and the same generation parameters like max_tokens and temperature.
+
+Why run the same test at different concurrency levels? Give two reasons and mention what we learn about the system from the shape of the latency and throughput curves.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:15.100888Z,2026-03-16T00:09:33.686043Z,18585.03724995535,,18585.03724995535,96,False,5.165445659799829,True,200,,
+8d81981d-0ef0-46ca-998b-bb15f012c458,20260316_000556,local-vllm-public-long-prompts,long-context,1,8,16,"We are designing a benchmark for our inference stack. The stack uses vLLM, a single public model (e.g. Qwen2-0.5B-Instruct), and we care about latency percentiles, time to first token, and token throughput under different concurrency levels. We run the same prompt set multiple times with a fixed seed and record per-request timings and any failures.
+
+What should this benchmark report include to be reproducible? List at least five items (e.g. model, config, metrics, hardware, software versions).",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:20.198057Z,2026-03-16T00:09:36.486998Z,16288.830582983792,,16288.830582983792,96,False,5.893609090654235,True,200,,
+ca4057a8-e6f8-476b-882b-9bbfe4c18f05,20260316_000556,local-vllm-public-long-prompts,long-context,1,8,17,"Consider the following operational scenario.
+
+We have an inference service that uses the vLLM engine and the Qwen2-0.5B-Instruct model. Requests are sent with a fixed max_tokens value and temperature set to zero for reproducibility. The workload consists of a small set of prompts repeated and shuffled with a fixed seed so that runs are comparable. We collect per-request latency, time to first token, and token throughput.
+
+How would you reduce slow requests in this model API? Give three concrete steps and mention what you would measure before and after.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:20.298462Z,2026-03-16T00:09:36.564045Z,16265.482165967114,,16265.482165967114,96,False,5.902069119159864,True,200,,
+23136c50-f572-42c8-8278-353f5e0681e4,20260316_000556,local-vllm-public-long-prompts,long-context,1,8,18,"Incident summary for the team:
+
+Today between 14:00 and 14:02 UTC the model API returned 5xx errors for a subset of requests. The root cause was a transient OOM on the GPU when too many long-context requests were in flight. We increased the request timeout and added a simple queue limit. The API has been stable since 14:05.
+
+Draft a one-line status update for users: API had 5xx errors for 2 minutes, now fixed. Then add one short sentence on what we changed so it does not happen again.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:20.298771Z,2026-03-16T00:09:24.870606Z,4571.849625092,,4571.849625092,27,False,5.905706052056924,True,200,,
+e6af6a15-6258-4666-8aac-7f8dcc247f40,20260316_000556,local-vllm-public-long-prompts,long-context,1,8,19,"Background: In serving LLMs, throughput is often measured in requests per second or tokens per second, while latency is measured as time to first token (TTFT) and total time to completion. Increasing concurrency usually increases total throughput but can increase latency because the GPU is shared across more in-flight requests.
+
+Explain the trade-off between throughput and latency in one sentence, then in one more sentence say what a good benchmark should report so we can reason about both.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:24.872561Z,2026-03-16T00:09:36.896155Z,12023.518708068877,,12023.518708068877,73,False,6.071433976395807,True,200,,
+1a9d304c-79e5-45f5-a4b3-eba82a7cf9bd,20260316_000556,local-vllm-public-long-prompts,long-context,1,8,20,"You are helping a team debug production latency. Here is the context.
+
+Our chat API serves a Qwen-based model on a single GPU with vLLM. We run a benchmark with 24 requests over concurrency levels 1, 2, 4, 8, and 16. At concurrency 1 we see about 3.3 seconds p50 latency and ~29 tokens per second. At concurrency 16, p50 latency rises to about 24 seconds and tokens per second drop to around 5. We use max_tokens=96 and temperature 0.
+
+List four reasons response time matters for chat apps in this setup, and one thing we could try next to improve latency at high concurrency.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:28.069245Z,2026-03-16T00:09:39.270962Z,11201.651165960357,,11201.651165960357,96,False,8.570165110276363,True,200,,
+13ef1414-867d-48a9-a52f-40020f5456d0,20260316_000556,local-vllm-public-long-prompts,long-context,1,8,21,"In load testing an LLM API we often sweep concurrency: we run the same workload at concurrency 1, 2, 4, 8, 16, and sometimes higher. Each run uses the same number of requests, the same prompts (shuffled with the same seed), and the same generation parameters like max_tokens and temperature.
+
+Why run the same test at different concurrency levels? Give two reasons and mention what we learn about the system from the shape of the latency and throughput curves.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:28.070265Z,2026-03-16T00:09:39.273466Z,11203.12937500421,,11203.12937500421,96,False,8.569034310555208,True,200,,
+7694f9e0-dc37-42e4-ad1c-b4ac0a3858d4,20260316_000556,local-vllm-public-long-prompts,long-context,1,8,22,"We are designing a benchmark for our inference stack. The stack uses vLLM, a single public model (e.g. Qwen2-0.5B-Instruct), and we care about latency percentiles, time to first token, and token throughput under different concurrency levels. We run the same prompt set multiple times with a fixed seed and record per-request timings and any failures.
+
+What should this benchmark report include to be reproducible? List at least five items (e.g. model, config, metrics, hardware, software versions).",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:28.071260Z,2026-03-16T00:09:39.272725Z,11201.395875075832,,11201.395875075832,96,False,8.570360432810798,True,200,,
+3030c5a6-a816-4ce6-b9d4-5b8fd5f5e584,20260316_000556,local-vllm-public-long-prompts,long-context,1,8,23,"Consider the following operational scenario.
+
+We have an inference service that uses the vLLM engine and the Qwen2-0.5B-Instruct model. Requests are sent with a fixed max_tokens value and temperature set to zero for reproducibility. The workload consists of a small set of prompts repeated and shuffled with a fixed seed so that runs are comparable. We collect per-request latency, time to first token, and token throughput.
+
+How would you reduce slow requests in this model API? Give three concrete steps and mention what you would measure before and after.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:33.684897Z,2026-03-16T00:09:40.013556Z,6328.618666972034,,6328.618666972034,96,False,15.169186998263523,True,200,,
+acd80f17-8cd1-4be3-a7d5-e4dcaa9fb3bb,20260316_000556,local-vllm-public-long-prompts,long-context,1,16,0,"In load testing an LLM API we often sweep concurrency: we run the same workload at concurrency 1, 2, 4, 8, 16, and sometimes higher. Each run uses the same number of requests, the same prompts (shuffled with the same seed), and the same generation parameters like max_tokens and temperature.
+
+Why run the same test at different concurrency levels? Give two reasons and mention what we learn about the system from the shape of the latency and throughput curves.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:40.014341Z,2026-03-16T00:10:11.457143Z,31442.60112498887,,31442.60112498887,96,False,3.053182515606332,True,200,,
+703d8e1e-76f6-4e29-9739-c076d9ac3bfd,20260316_000556,local-vllm-public-long-prompts,long-context,1,16,1,"Background: In serving LLMs, throughput is often measured in requests per second or tokens per second, while latency is measured as time to first token (TTFT) and total time to completion. Increasing concurrency usually increases total throughput but can increase latency because the GPU is shared across more in-flight requests.
+
+Explain the trade-off between throughput and latency in one sentence, then in one more sentence say what a good benchmark should report so we can reason about both.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:40.014888Z,2026-03-16T00:10:05.116053Z,25101.007290999405,,25101.007290999405,73,False,2.9082498225549687,True,200,,
+2cee814c-b163-41f9-834a-9ee528332db7,20260316_000556,local-vllm-public-long-prompts,long-context,1,16,2,"We are designing a benchmark for our inference stack. The stack uses vLLM, a single public model (e.g. Qwen2-0.5B-Instruct), and we care about latency percentiles, time to first token, and token throughput under different concurrency levels. We run the same prompt set multiple times with a fixed seed and record per-request timings and any failures.
+
+What should this benchmark report include to be reproducible? List at least five items (e.g. model, config, metrics, hardware, software versions).",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:40.015117Z,2026-03-16T00:10:11.668093Z,31652.77275000699,,31652.77275000699,96,False,3.032909652440442,True,200,,
+f6b15a10-e87d-4318-b957-ad629898dd3f,20260316_000556,local-vllm-public-long-prompts,long-context,1,16,3,"Incident summary for the team:
+
+Today between 14:00 and 14:02 UTC the model API returned 5xx errors for a subset of requests. The root cause was a transient OOM on the GPU when too many long-context requests were in flight. We increased the request timeout and added a simple queue limit. The API has been stable since 14:05.
+
+Draft a one-line status update for users: API had 5xx errors for 2 minutes, now fixed. Then add one short sentence on what we changed so it does not happen again.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:40.015342Z,2026-03-16T00:09:54.274387Z,14258.954541990533,,14258.954541990533,27,False,1.8935469581931097,True,200,,
+34f55ebb-894c-4b91-9981-1adac9fc33cd,20260316_000556,local-vllm-public-long-prompts,long-context,1,16,4,"You are helping a team debug production latency. Here is the context.
+
+Our chat API serves a Qwen-based model on a single GPU with vLLM. We run a benchmark with 24 requests over concurrency levels 1, 2, 4, 8, and 16. At concurrency 1 we see about 3.3 seconds p50 latency and ~29 tokens per second. At concurrency 16, p50 latency rises to about 24 seconds and tokens per second drop to around 5. We use max_tokens=96 and temperature 0.
+
+List four reasons response time matters for chat apps in this setup, and one thing we could try next to improve latency at high concurrency.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:40.015520Z,2026-03-16T00:10:11.670421Z,31654.69745802693,,31654.69745802693,96,False,3.0327252417210047,True,200,,
+bbc3d44c-a990-4b79-b4ea-a6c92c3677d4,20260316_000556,local-vllm-public-long-prompts,long-context,1,16,5,"Consider the following operational scenario.
+
+We have an inference service that uses the vLLM engine and the Qwen2-0.5B-Instruct model. Requests are sent with a fixed max_tokens value and temperature set to zero for reproducibility. The workload consists of a small set of prompts repeated and shuffled with a fixed seed so that runs are comparable. We collect per-request latency, time to first token, and token throughput.
+
+How would you reduce slow requests in this model API? Give three concrete steps and mention what you would measure before and after.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:40.015714Z,2026-03-16T00:10:11.665880Z,31649.9644999858,,31649.9644999858,96,False,3.0331787575952283,True,200,,
+ea134ab8-42cd-4b34-aa51-5825a7a6a104,20260316_000556,local-vllm-public-long-prompts,long-context,1,16,6,"In load testing an LLM API we often sweep concurrency: we run the same workload at concurrency 1, 2, 4, 8, 16, and sometimes higher. Each run uses the same number of requests, the same prompts (shuffled with the same seed), and the same generation parameters like max_tokens and temperature.
+
+Why run the same test at different concurrency levels? Give two reasons and mention what we learn about the system from the shape of the latency and throughput curves.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:40.015986Z,2026-03-16T00:10:11.671851Z,31655.662542092614,,31655.662542092614,96,False,3.032632783229495,True,200,,
+dd149bd3-cdac-41c6-a94e-e473fbe07b21,20260316_000556,local-vllm-public-long-prompts,long-context,1,16,7,"Background: In serving LLMs, throughput is often measured in requests per second or tokens per second, while latency is measured as time to first token (TTFT) and total time to completion. Increasing concurrency usually increases total throughput but can increase latency because the GPU is shared across more in-flight requests.
+
+Explain the trade-off between throughput and latency in one sentence, then in one more sentence say what a good benchmark should report so we can reason about both.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:40.016237Z,2026-03-16T00:10:05.118257Z,25101.85991600156,,25101.85991600156,73,False,2.9081510391771825,True,200,,
+11e86809-c6d6-4d21-9e7d-8b13c597a84b,20260316_000556,local-vllm-public-long-prompts,long-context,1,16,8,"We are designing a benchmark for our inference stack. The stack uses vLLM, a single public model (e.g. Qwen2-0.5B-Instruct), and we care about latency percentiles, time to first token, and token throughput under different concurrency levels. We run the same prompt set multiple times with a fixed seed and record per-request timings and any failures.
+
+What should this benchmark report include to be reproducible? List at least five items (e.g. model, config, metrics, hardware, software versions).",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:40.016436Z,2026-03-16T00:10:11.669600Z,31652.961375075392,,31652.961375075392,96,False,3.032891578845878,True,200,,
+e6a4f8d8-81d6-4794-ac68-21d47e5225c7,20260316_000556,local-vllm-public-long-prompts,long-context,1,16,9,"Incident summary for the team:
+
+Today between 14:00 and 14:02 UTC the model API returned 5xx errors for a subset of requests. The root cause was a transient OOM on the GPU when too many long-context requests were in flight. We increased the request timeout and added a simple queue limit. The API has been stable since 14:05.
+
+Draft a one-line status update for users: API had 5xx errors for 2 minutes, now fixed. Then add one short sentence on what we changed so it does not happen again.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:40.016777Z,2026-03-16T00:09:54.270410Z,14253.620084025897,,14253.620084025897,27,False,1.894255623542193,True,200,,
+6594d665-2e02-4467-b613-ce2b04dc4620,20260316_000556,local-vllm-public-long-prompts,long-context,1,16,10,"You are helping a team debug production latency. Here is the context.
+
+Our chat API serves a Qwen-based model on a single GPU with vLLM. We run a benchmark with 24 requests over concurrency levels 1, 2, 4, 8, and 16. At concurrency 1 we see about 3.3 seconds p50 latency and ~29 tokens per second. At concurrency 16, p50 latency rises to about 24 seconds and tokens per second drop to around 5. We use max_tokens=96 and temperature 0.
+
+List four reasons response time matters for chat apps in this setup, and one thing we could try next to improve latency at high concurrency.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:40.017000Z,2026-03-16T00:10:11.668936Z,31651.7345829634,,31651.7345829634,96,False,3.0330091309331326,True,200,,
+6a4dd5d2-23e2-41e0-90f9-3133f134e9d9,20260316_000556,local-vllm-public-long-prompts,long-context,1,16,11,"Consider the following operational scenario.
+
+We have an inference service that uses the vLLM engine and the Qwen2-0.5B-Instruct model. Requests are sent with a fixed max_tokens value and temperature set to zero for reproducibility. The workload consists of a small set of prompts repeated and shuffled with a fixed seed so that runs are comparable. We collect per-request latency, time to first token, and token throughput.
+
+How would you reduce slow requests in this model API? Give three concrete steps and mention what you would measure before and after.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:40.017237Z,2026-03-16T00:10:11.672631Z,31655.18925001379,,31655.18925001379,96,False,3.0326781255922572,True,200,,
+6d0afe8c-087f-4bb7-9223-95a8a2b13696,20260316_000556,local-vllm-public-long-prompts,long-context,1,16,12,"In load testing an LLM API we often sweep concurrency: we run the same workload at concurrency 1, 2, 4, 8, 16, and sometimes higher. Each run uses the same number of requests, the same prompts (shuffled with the same seed), and the same generation parameters like max_tokens and temperature.
+
+Why run the same test at different concurrency levels? Give two reasons and mention what we learn about the system from the shape of the latency and throughput curves.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:40.017441Z,2026-03-16T00:10:11.667694Z,31650.049332994968,,31650.049332994968,96,False,3.033170627633766,True,200,,
+f37986f8-56de-46f6-b620-ff1e98d83182,20260316_000556,local-vllm-public-long-prompts,long-context,1,16,13,"Background: In serving LLMs, throughput is often measured in requests per second or tokens per second, while latency is measured as time to first token (TTFT) and total time to completion. Increasing concurrency usually increases total throughput but can increase latency because the GPU is shared across more in-flight requests.
+
+Explain the trade-off between throughput and latency in one sentence, then in one more sentence say what a good benchmark should report so we can reason about both.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:40.017614Z,2026-03-16T00:10:05.118627Z,25100.852375035174,,25100.852375035174,73,False,2.9082677715201575,True,200,,
+65c22531-9e94-42da-9846-fc54263065b3,20260316_000556,local-vllm-public-long-prompts,long-context,1,16,14,"We are designing a benchmark for our inference stack. The stack uses vLLM, a single public model (e.g. Qwen2-0.5B-Instruct), and we care about latency percentiles, time to first token, and token throughput under different concurrency levels. We run the same prompt set multiple times with a fixed seed and record per-request timings and any failures.
+
+What should this benchmark report include to be reproducible? List at least five items (e.g. model, config, metrics, hardware, software versions).",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:40.017769Z,2026-03-16T00:10:11.673125Z,31655.153000028804,,31655.153000028804,96,False,3.032681598471903,True,200,,
+49d05806-4de1-42d5-9823-bd0700f6c3b2,20260316_000556,local-vllm-public-long-prompts,long-context,1,16,15,"Incident summary for the team:
+
+Today between 14:00 and 14:02 UTC the model API returned 5xx errors for a subset of requests. The root cause was a transient OOM on the GPU when too many long-context requests were in flight. We increased the request timeout and added a simple queue limit. The API has been stable since 14:05.
+
+Draft a one-line status update for users: API had 5xx errors for 2 minutes, now fixed. Then add one short sentence on what we changed so it does not happen again.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:40.017942Z,2026-03-16T00:09:54.274869Z,14256.836000015028,,14256.836000015028,27,False,1.893828336102873,True,200,,
+879efbc4-5cd1-4bf6-93cd-e587885611eb,20260316_000556,local-vllm-public-long-prompts,long-context,1,16,16,"You are helping a team debug production latency. Here is the context.
+
+Our chat API serves a Qwen-based model on a single GPU with vLLM. We run a benchmark with 24 requests over concurrency levels 1, 2, 4, 8, and 16. At concurrency 1 we see about 3.3 seconds p50 latency and ~29 tokens per second. At concurrency 16, p50 latency rises to about 24 seconds and tokens per second drop to around 5. We use max_tokens=96 and temperature 0.
+
+List four reasons response time matters for chat apps in this setup, and one thing we could try next to improve latency at high concurrency.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:54.273731Z,2026-03-16T00:10:14.971728Z,20697.865332942456,,20697.865332942456,96,False,4.6381594650346685,True,200,,
+0fccb093-d158-4dca-99ac-24a8b28e8fc5,20260316_000556,local-vllm-public-long-prompts,long-context,1,16,17,"Consider the following operational scenario.
+
+We have an inference service that uses the vLLM engine and the Qwen2-0.5B-Instruct model. Requests are sent with a fixed max_tokens value and temperature set to zero for reproducibility. The workload consists of a small set of prompts repeated and shuffled with a fixed seed so that runs are comparable. We collect per-request latency, time to first token, and token throughput.
+
+How would you reduce slow requests in this model API? Give three concrete steps and mention what you would measure before and after.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:54.275216Z,2026-03-16T00:10:14.972894Z,20697.541541070677,,20697.541541070677,96,False,4.638232024296444,True,200,,
+6d4fd827-0960-4793-a3fd-7d8b26e80bde,20260316_000556,local-vllm-public-long-prompts,long-context,1,16,18,"In load testing an LLM API we often sweep concurrency: we run the same workload at concurrency 1, 2, 4, 8, 16, and sometimes higher. Each run uses the same number of requests, the same prompts (shuffled with the same seed), and the same generation parameters like max_tokens and temperature.
+
+Why run the same test at different concurrency levels? Give two reasons and mention what we learn about the system from the shape of the latency and throughput curves.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:09:54.275787Z,2026-03-16T00:10:14.973610Z,20697.692416026257,,20697.692416026257,96,False,4.638198214099802,True,200,,
+8d0ed84e-57c5-4dba-a0f2-f22ae38121e2,20260316_000556,local-vllm-public-long-prompts,long-context,1,16,19,"Background: In serving LLMs, throughput is often measured in requests per second or tokens per second, while latency is measured as time to first token (TTFT) and total time to completion. Increasing concurrency usually increases total throughput but can increase latency because the GPU is shared across more in-flight requests.
+
+Explain the trade-off between throughput and latency in one sentence, then in one more sentence say what a good benchmark should report so we can reason about both.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:10:05.117799Z,2026-03-16T00:10:16.517713Z,11399.843957973644,,11399.843957973644,73,False,6.4035964236984135,True,200,,
+4ed73573-0bce-4b3b-91f7-d81705a84122,20260316_000556,local-vllm-public-long-prompts,long-context,1,16,20,"We are designing a benchmark for our inference stack. The stack uses vLLM, a single public model (e.g. Qwen2-0.5B-Instruct), and we care about latency percentiles, time to first token, and token throughput under different concurrency levels. We run the same prompt set multiple times with a fixed seed and record per-request timings and any failures.
+
+What should this benchmark report include to be reproducible? List at least five items (e.g. model, config, metrics, hardware, software versions).",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:10:05.118837Z,2026-03-16T00:10:17.794509Z,12675.594458007254,,12675.594458007254,96,False,7.573609294462414,True,200,,
+2e00cdd7-019d-4590-a666-13774414d631,20260316_000556,local-vllm-public-long-prompts,long-context,1,16,21,"Incident summary for the team:
+
+Today between 14:00 and 14:02 UTC the model API returned 5xx errors for a subset of requests. The root cause was a transient OOM on the GPU when too many long-context requests were in flight. We increased the request timeout and added a simple queue limit. The API has been stable since 14:05.
+
+Draft a one-line status update for users: API had 5xx errors for 2 minutes, now fixed. Then add one short sentence on what we changed so it does not happen again.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:10:05.119081Z,2026-03-16T00:10:12.564627Z,7445.504333940335,,7445.504333940335,27,False,3.6263493766191885,True,200,,
+4e075e07-e884-41c5-ae56-0bf7fe806879,20260316_000556,local-vllm-public-long-prompts,long-context,1,16,22,"You are helping a team debug production latency. Here is the context.
+
+Our chat API serves a Qwen-based model on a single GPU with vLLM. We run a benchmark with 24 requests over concurrency levels 1, 2, 4, 8, and 16. At concurrency 1 we see about 3.3 seconds p50 latency and ~29 tokens per second. At concurrency 16, p50 latency rises to about 24 seconds and tokens per second drop to around 5. We use max_tokens=96 and temperature 0.
+
+List four reasons response time matters for chat apps in this setup, and one thing we could try next to improve latency at high concurrency.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:10:11.457694Z,2026-03-16T00:10:18.726880Z,7269.14295903407,,7269.14295903407,96,False,13.206508737139565,True,200,,
+27b1f75e-2d26-403f-905d-941079c5ddf5,20260316_000556,local-vllm-public-long-prompts,long-context,1,16,23,"Consider the following operational scenario.
+
+We have an inference service that uses the vLLM engine and the Qwen2-0.5B-Instruct model. Requests are sent with a fixed max_tokens value and temperature set to zero for reproducibility. The workload consists of a small set of prompts repeated and shuffled with a fixed seed so that runs are comparable. We collect per-request latency, time to first token, and token throughput.
+
+How would you reduce slow requests in this model API? Give three concrete steps and mention what you would measure before and after.",vllm,Qwen/Qwen2-0.5B-Instruct,False,2026-03-16T00:10:11.666994Z,2026-03-16T00:10:18.757482Z,7090.439833002165,,7090.439833002165,96,False,13.539357537902218,True,200,,
