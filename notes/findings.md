@@ -86,3 +86,54 @@ Candidate claim from this batch:
 
 Next experiment step:
 - Add explicit prompt-length buckets targeting ~512, ~2048, and ~8192 input tokens, then rerun the same concurrency sweep for strict context-length scaling curves.
+
+---
+
+## Experiment batch: explicit token buckets (512 / 2048 / 8192)
+
+Environment:
+- vLLM: `0.15.0+cpu`
+- torch: `2.10.0+cpu`
+- model: `Qwen/Qwen2-0.5B-Instruct`
+- hardware: 4 vCPU (`Intel(R) Xeon(R) Processor`)
+- server command: `.venv/bin/vllm serve Qwen/Qwen2-0.5B-Instruct --host 0.0.0.0 --port 8000`
+
+Configs:
+- `configs/exp_vllm_public_ctx512_stream_true.yaml`
+- `configs/exp_vllm_public_ctx2048_stream_true.yaml`
+- `configs/exp_vllm_public_ctx8192_stream_true.yaml`
+
+Prompt sets (24 prompts each; exact bucketed token lengths):
+- `prompts/context_512_tokens.json`
+- `prompts/context_2048_tokens.json`
+- `prompts/context_8192_tokens.json`
+
+Run directories:
+- `results/exp-qwen2-0.5b-ctx512-stream-true/exp-vllm-public-ctx512-stream-true_20260316_180650`
+- `results/exp-qwen2-0.5b-ctx2048-stream-true/exp-vllm-public-ctx2048-stream-true_20260316_180935`
+- `results/exp-qwen2-0.5b-ctx8192-stream-true/exp-vllm-public-ctx8192-stream-true_20260316_181339`
+
+### Key metrics (stream=true)
+
+| Bucket | Concurrency | p95 latency | TTFT p50 | Throughput tok/s |
+|--------|-------------|-------------|----------|------------------|
+| 512    | 1           | 3.05 s      | 315 ms   | 15.62            |
+| 512    | 32          | 8.85 s      | 596 ms   | 5.10             |
+| 2048   | 1           | 5.08 s      | 2.03 s   | 9.29             |
+| 2048   | 32          | 16.34 s     | 1.35 s   | 2.90             |
+| 8192   | 1           | 30.29 s     | 25.12 s  | 1.56             |
+| 8192   | 32          | 47.82 s     | 4.16 s   | 0.95             |
+
+### Strongest anomaly
+
+For the 8192-token bucket, increasing concurrency from 1 to 2 *reduced* p95 latency sharply:
+- p95(c=1): 30.29 s
+- p95(c=2): 6.37 s
+- ratio: **4.76x faster at c=2 than c=1**
+
+This non-monotonic result is much larger than the same ratio at shorter buckets:
+- 512 bucket: 1.08x (c1/c2)
+- 2048 bucket: 1.49x (c1/c2)
+
+Potential interpretation to validate upstream:
+- Prefix-cache/warm-state effects across sweep steps may dominate c=1 in long-context runs, making raw concurrency curves misleading unless cache effects are controlled.
