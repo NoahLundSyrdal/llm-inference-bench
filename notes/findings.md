@@ -137,3 +137,19 @@ This non-monotonic result is much larger than the same ratio at shorter buckets:
 
 Potential interpretation to validate upstream:
 - Prefix-cache/warm-state effects across sweep steps may dominate c=1 in long-context runs, making raw concurrency curves misleading unless cache effects are controlled.
+
+### Control run: disable prefix caching (c=1 vs c=2 only)
+
+To check whether the c1->c2 inversion was a cache artifact, I reran 8192-token prompts on a separate server with prefix caching disabled:
+
+- server: `.venv/bin/vllm serve Qwen/Qwen2-0.5B-Instruct --host 0.0.0.0 --port 8001 --no-enable-prefix-caching`
+- config: `configs/exp_vllm_public_ctx8192_c1c2_no_prefix_cache.yaml`
+- run dir: `results/exp-qwen2-0.5b-ctx8192-c1c2-no-prefix-cache/exp-vllm-public-ctx8192-c1c2-no-prefix-cache_20260316_230050`
+
+Results:
+- c=1: p95 31.93 s, TTFT p50 27.26 s, tok/s 1.393
+- c=2: p95 61.11 s, TTFT p50 34.34 s, tok/s 0.703
+
+Conclusion:
+- With prefix caching disabled, latency behaves in the expected direction (c=2 slower than c=1).
+- The earlier c1<c2 inversion is likely not a scheduler bug by itself; it is strongly confounded by warm-state/prefix-cache behavior across sweep order.

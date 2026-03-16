@@ -1,0 +1,3 @@
+engine,model,workload_label,concurrency,total_requests,successes,failures,error_rate,latency_ms_p50,latency_ms_p95,latency_ms_p99,ttft_ms_p50,ttft_ms_p95,throughput_tokens_per_s_mean,throughput_tokens_per_s_median
+vllm,Qwen/Qwen2-0.5B-Instruct,ctx-8192-no-prefix-cache,1,24,24,0,0.0,30801.693337998586,31932.846256648554,32349.026115100532,27256.51711249884,27765.896436899493,1.3929023819675759,1.506864762179704
+vllm,Qwen/Qwen2-0.5B-Instruct,ctx-8192-no-prefix-cache,2,24,24,0,0.0,60104.1413719995,61106.17561174913,72321.83151378042,34340.74733600028,40056.328183098776,0.7027087860471433,0.7545515985146866
