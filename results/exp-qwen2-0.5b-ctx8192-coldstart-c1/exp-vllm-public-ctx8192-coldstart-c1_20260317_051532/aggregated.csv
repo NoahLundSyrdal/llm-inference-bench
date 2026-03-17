@@ -1,0 +1,2 @@
+engine,model,workload_label,concurrency,total_requests,successes,failures,error_rate,latency_ms_p50,latency_ms_p95,latency_ms_p99,ttft_ms_p50,ttft_ms_p95,throughput_tokens_per_s_mean,throughput_tokens_per_s_median
+vllm,Qwen/Qwen2-0.5B-Instruct,ctx-8192-coldstart-c1,1,24,24,0,0.0,31381.50391599993,37559.74911320409,41185.3032311015,27516.52317749904,33288.48012675444,1.2993812385779273,1.3380827643991517

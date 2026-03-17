@@ -170,3 +170,24 @@ Results (still non-monotonic at low concurrency):
 Interpretation:
 - Fixing OMP/MKL thread counts did **not** remove the c1->c2 inversion in this setup.
 - This means thread variability alone does not explain the original anomaly.
+
+### Cold-start isolated single-concurrency check (fresh process per concurrency)
+
+To remove sweep-order effects completely, I ran two separate fresh-process runs with fixed threads:
+
+- c=1 server: `OMP_NUM_THREADS=8 MKL_NUM_THREADS=8 vllm serve ... --port 8002`
+- c=2 server: `OMP_NUM_THREADS=8 MKL_NUM_THREADS=8 vllm serve ... --port 8003`
+- configs:
+  - `configs/exp_vllm_public_ctx8192_coldstart_c1.yaml`
+  - `configs/exp_vllm_public_ctx8192_coldstart_c2.yaml`
+- run dirs:
+  - `results/exp-qwen2-0.5b-ctx8192-coldstart-c1/exp-vllm-public-ctx8192-coldstart-c1_20260317_051532`
+  - `results/exp-qwen2-0.5b-ctx8192-coldstart-c2/exp-vllm-public-ctx8192-coldstart-c2_20260317_053059`
+
+Results:
+- cold-start c=1: p95 37.56 s, TTFT p50 27.52 s, tok/s 1.299
+- cold-start c=2: p95 71.00 s, TTFT p50 38.48 s, tok/s 0.674
+
+Conclusion:
+- Inversion disappears under isolated cold starts; c=2 is slower than c=1.
+- This supports the maintainer hypothesis that the earlier c1<c2 result is mainly a benchmarking/sweep artifact (warm-state + CPU batching/cache effects), not necessarily a code bug.
