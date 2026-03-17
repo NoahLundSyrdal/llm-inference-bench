@@ -36,6 +36,62 @@ No Hugging Face login required for the public Qwen config. The default Llama con
 - **Config:** [`configs/local_vllm_public.yaml`](configs/local_vllm_public.yaml) (public model), [`configs/local_vllm.yaml`](configs/local_vllm.yaml) (Llama, gated). Set `backend.base_url`, `backend.model`, `concurrency_sweep`, `workload.prompts_file`.
 - **Commands:** `make serve` (vLLM on 8000), `make check`, `make bench`, `make lint`, `make test`. Override: `CONFIG=...`, `VLLM_MODEL=...`.
 
+## Overnight campaign runs (regressions + tuning)
+
+Use the campaign runner to execute many benchmark experiments from one YAML (including vLLM version regressions, CPU vs GPU, and scheduler-flag sweeps).
+
+Example:
+
+```bash
+make campaign CONFIG=configs/nightly_vllm_regression_campaign.yaml
+```
+
+Optional bounded parallelism:
+
+```bash
+python -m llmbench.cli campaign configs/nightly_vllm_regression_campaign.yaml --max-workers 2
+```
+
+Dry-run first to inspect the generated experiment plan:
+
+```bash
+python -m llmbench.cli campaign configs/nightly_vllm_regression_campaign.yaml --dry-run
+```
+
+The sample campaign config already includes:
+- Regression axes for `0.14.0`, `0.15.0`, and `main`
+- Device axis for `cpu` vs `cuda`
+- Scheduler axes for `--max-num-batched-tokens`, `--max-model-len`, and `--gpu-memory-utilization`
+
+Campaign output includes:
+- `campaign_runs.csv` (one row per experiment with key rollup metrics)
+- `campaign_report.md` (ranked throughput table + failures)
+- Per-experiment run directories and server logs
+
+To run all night in the background:
+
+```bash
+nohup .venv/bin/python -m llmbench.cli campaign configs/nightly_vllm_regression_campaign.yaml > /tmp/llmbench_campaign.log 2>&1 &
+```
+
+## Regression campaign example
+
+Run a 48-experiment sweep across versions and scheduler flags:
+
+```bash
+make campaign CONFIG=configs/nightly_vllm_regression_campaign.yaml
+```
+
+Top-level outputs (inside the campaign run directory):
+
+```text
+results/campaigns/<campaign_name_timestamp>/
+  campaign_runs.csv
+  campaign_report.md
+  runs/
+    exp_...
+```
+
 ## Using this for OSS contributions
 
 Treat this repo as a performance investigation tool for upstream projects.

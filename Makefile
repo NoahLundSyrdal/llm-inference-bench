@@ -1,7 +1,7 @@
 PYTHON ?= $(if $(wildcard .venv/bin/python),.venv/bin/python,python3)
 CONFIG ?= configs/local_vllm.yaml
 
-.PHONY: install lint test check bench serve
+.PHONY: install lint test check bench serve campaign
 
 VLLM_MODEL ?= meta-llama/Llama-3.1-8B-Instruct
 serve:
@@ -21,3 +21,6 @@ check:
 
 bench:
 	$(PYTHON) -m llmbench.cli run $(CONFIG)
+
+campaign:
+	$(PYTHON) -m llmbench.cli campaign $(CONFIG)
