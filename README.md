@@ -46,6 +46,12 @@ Example:
 make campaign CONFIG=configs/nightly_vllm_regression_campaign.yaml
 ```
 
+Optional bounded parallelism:
+
+```bash
+python -m llmbench.cli campaign configs/nightly_vllm_regression_campaign.yaml --max-workers 2
+```
+
 Dry-run first to inspect the generated experiment plan:
 
 ```bash
@@ -66,6 +72,24 @@ To run all night in the background:
 
 ```bash
 nohup .venv/bin/python -m llmbench.cli campaign configs/nightly_vllm_regression_campaign.yaml > /tmp/llmbench_campaign.log 2>&1 &
+```
+
+## Regression campaign example
+
+Run a 48-experiment sweep across versions and scheduler flags:
+
+```bash
+make campaign CONFIG=configs/nightly_vllm_regression_campaign.yaml
+```
+
+Top-level outputs (inside the campaign run directory):
+
+```text
+results/campaigns/<campaign_name_timestamp>/
+  campaign_runs.csv
+  campaign_report.md
+  runs/
+    exp_...
 ```
 
 ## Using this for OSS contributions

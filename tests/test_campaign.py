@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from pathlib import Path
 
@@ -27,6 +28,8 @@ class DummyBackendAdapter(BaseBackendAdapter):
         return "ok", 2, True
 
     async def generate(self, client, prompt, generation):  # type: ignore[override]
+        if generation.stream:
+            await asyncio.sleep(0.03)
         return BackendResult(
             output_text=f"response to: {prompt}",
             output_tokens=4,
@@ -114,18 +117,22 @@ def test_campaign_runner_writes_summary_and_metadata_tags(tmp_path: Path) -> Non
             [
                 "name: explicit-campaign",
                 "output_dir: campaign-results",
+                "baseline:",
+                "  version: '0.15.0'",
+                "throughput_drop_pct_threshold: 1",
+                "latency_p95_increase_pct_threshold: 1",
                 "experiments:",
                 "  - name: v014-cpu",
                 f"    config_path: {run_config_path.name}",
                 "    tags:",
-                "      vllm_version: '0.14'",
+                "      version: '0.15.0'",
                 "      hardware: cpu",
                 "  - name: v015-gpu",
                 f"    config_path: {run_config_path.name}",
                 "    generation_overrides:",
                 "      stream: true",
                 "    tags:",
-                "      vllm_version: '0.15'",
+                "      version: main",
                 "      hardware: cuda",
             ]
         ),
@@ -138,7 +145,7 @@ def test_campaign_runner_writes_summary_and_metadata_tags(tmp_path: Path) -> Non
             backend_override=DummyBackendAdapter(base_url="http://x", model="m")
         )
     )
-    campaign_dir = campaign_runner.run(campaign_config)
+    campaign_dir = campaign_runner.run(campaign_config, max_workers=2)
 
     summary_csv = campaign_dir / "campaign_runs.csv"
     report_md = campaign_dir / "campaign_report.md"
@@ -149,7 +156,12 @@ def test_campaign_runner_writes_summary_and_metadata_tags(tmp_path: Path) -> Non
     assert len(summary) == 2
     assert set(summary["status"].tolist()) == {"ok"}
     assert "peak_throughput_tokens_per_s" in summary.columns
-    assert set(summary["tag_vllm_version"].astype(str).tolist()) == {"0.14", "0.15"}
+    assert set(summary["tag_version"].astype(str).tolist()) == {"0.15.0", "main"}
+    assert {"git_sha", "vllm_commit", "torch_version", "cpu_model", "num_threads"}.issubset(
+        set(summary.columns)
+    )
+    assert set(summary["vllm_commit"].astype(str).tolist()) == {"0.15.0", "main"}
+    assert summary["num_threads"].astype(int).min() >= 1
 
     run_dir = Path(summary.iloc[0]["run_dir"])
     metadata_path = run_dir / "run_metadata.json"
@@ -158,3 +170,7 @@ def test_campaign_runner_writes_summary_and_metadata_tags(tmp_path: Path) -> Non
     assert metadata["campaign_name"] == "explicit-campaign"
     assert metadata["experiment_name"] in {"v014-cpu", "v015-gpu"}
     assert isinstance(metadata["experiment_tags"], dict)
+
+    report = report_md.read_text(encoding="utf-8")
+    assert "Regression checks" in report
+    assert "Regression detected" in report

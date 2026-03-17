@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import itertools
+import json
+import os
+import shlex
 import subprocess
 import time
 from pathlib import Path
@@ -57,6 +60,9 @@ class CampaignConfig(BaseModel):
     name: str
     output_dir: Path = Path("results/campaigns")
     continue_on_error: bool = False
+    baseline: dict[str, str | int | float | bool] | None = None
+    throughput_drop_pct_threshold: float = Field(default=10.0, ge=0.0)
+    latency_p95_increase_pct_threshold: float = Field(default=15.0, ge=0.0)
     experiments: list[CampaignExperimentConfig] = Field(default_factory=list)
 
 
@@ -86,6 +92,9 @@ def load_campaign_config(config_path: str | Path) -> CampaignConfig:
         "name": raw.get("name", "campaign"),
         "output_dir": raw.get("output_dir", "results/campaigns"),
         "continue_on_error": raw.get("continue_on_error", False),
+        "baseline": raw.get("baseline"),
+        "throughput_drop_pct_threshold": raw.get("throughput_drop_pct_threshold", 10.0),
+        "latency_p95_increase_pct_threshold": raw.get("latency_p95_increase_pct_threshold", 15.0),
         "experiments": experiments,
     }
     try:
@@ -184,26 +193,24 @@ def _resolve_campaign_paths(config: CampaignConfig, base_dir: Path) -> CampaignC
 class CampaignRunner:
     def __init__(self, benchmark_runner: BenchmarkRunner | None = None) -> None:
         self.benchmark_runner = benchmark_runner or BenchmarkRunner()
+        self._runtime_probe_cache: dict[str, dict[str, Any]] = {}
 
-    def run(self, config: CampaignConfig, *, dry_run: bool = False) -> Path:
+    def run(self, config: CampaignConfig, *, dry_run: bool = False, max_workers: int = 1) -> Path:
+        if max_workers < 1:
+            msg = "max_workers must be >= 1"
+            raise ValueError(msg)
         campaign_run_id = timestamp_slug()
         campaign_dir = create_run_directory(config.output_dir, config.name, campaign_run_id)
         if dry_run:
-            self._write_dry_run_plan(config=config, campaign_dir=campaign_dir)
+            self._write_dry_run_plan(config=config, campaign_dir=campaign_dir, max_workers=max_workers)
             return campaign_dir
 
-        records: list[dict[str, Any]] = []
-        for experiment in config.experiments:
-            row = self._run_experiment(
-                campaign=config,
-                campaign_run_id=campaign_run_id,
-                campaign_dir=campaign_dir,
-                experiment=experiment,
-            )
-            records.append(row)
-
-            if row["status"] == "failed" and not config.continue_on_error:
-                break
+        records = self._run_experiments(
+            campaign=config,
+            campaign_run_id=campaign_run_id,
+            campaign_dir=campaign_dir,
+            max_workers=max_workers,
+        )
 
         self._write_campaign_outputs(campaign=config, campaign_dir=campaign_dir, records=records)
         failures = [record for record in records if record["status"] == "failed"]
@@ -213,6 +220,70 @@ class CampaignRunner:
             raise RuntimeError(msg)
 
         return campaign_dir
+
+    def _run_experiments(
+        self,
+        *,
+        campaign: CampaignConfig,
+        campaign_run_id: str,
+        campaign_dir: Path,
+        max_workers: int,
+    ) -> list[dict[str, Any]]:
+        if max_workers == 1:
+            records: list[dict[str, Any]] = []
+            for experiment in campaign.experiments:
+                row = self._run_experiment(
+                    campaign=campaign,
+                    campaign_run_id=campaign_run_id,
+                    campaign_dir=campaign_dir,
+                    experiment=experiment,
+                )
+                records.append(row)
+                if row["status"] == "failed" and not campaign.continue_on_error:
+                    break
+            return records
+
+        return asyncio.run(
+            self._run_experiments_parallel(
+                campaign=campaign,
+                campaign_run_id=campaign_run_id,
+                campaign_dir=campaign_dir,
+                max_workers=max_workers,
+            )
+        )
+
+    async def _run_experiments_parallel(
+        self,
+        *,
+        campaign: CampaignConfig,
+        campaign_run_id: str,
+        campaign_dir: Path,
+        max_workers: int,
+    ) -> list[dict[str, Any]]:
+        indexed = list(enumerate(campaign.experiments))
+        collected: list[tuple[int, dict[str, Any]]] = []
+
+        for batch_start in range(0, len(indexed), max_workers):
+            batch = indexed[batch_start : batch_start + max_workers]
+            tasks = [
+                asyncio.to_thread(
+                    self._run_experiment,
+                    campaign=campaign,
+                    campaign_run_id=campaign_run_id,
+                    campaign_dir=campaign_dir,
+                    experiment=experiment,
+                )
+                for _, experiment in batch
+            ]
+            rows = await asyncio.gather(*tasks)
+            for (index, _), row in zip(batch, rows, strict=True):
+                collected.append((index, row))
+
+            if not campaign.continue_on_error and any(row["status"] == "failed" for row in rows):
+                break
+
+        collected.sort(key=lambda item: item[0])
+        return [row for _, row in collected]
 
     def _run_experiment(
         self,
@@ -237,6 +308,7 @@ class CampaignRunner:
             "run_dir": "",
             "error": "",
             **{f"tag_{key}": value for key, value in merged_tags.items()},
+            **self._base_repro_fields(),
         }
 
         process: subprocess.Popen[str] | None = None
@@ -313,6 +385,13 @@ class CampaignRunner:
                 "error": "",
             }
             record.update(self._extract_rollup_metrics(run_dir))
+            record.update(
+                self._collect_repro_metadata(
+                    run_dir=run_dir,
+                    experiment=experiment,
+                    fallback_tags=merged_tags,
+                )
+            )
             if server_log_path is not None:
                 record["server_log"] = str(server_log_path)
             return record
@@ -336,6 +415,109 @@ class CampaignRunner:
                     process.wait()
             if log_handle is not None:
                 log_handle.close()
+
+    def _base_repro_fields(self) -> dict[str, Any]:
+        return {
+            "git_sha": "",
+            "vllm_commit": "",
+            "torch_version": "",
+            "cpu_model": _detect_cpu_model(),
+            "num_threads": os.cpu_count() or 0,
+        }
+
+    def _collect_repro_metadata(
+        self,
+        *,
+        run_dir: Path,
+        experiment: CampaignExperimentConfig,
+        fallback_tags: dict[str, str | int | float | bool],
+    ) -> dict[str, Any]:
+        metadata = self._base_repro_fields()
+
+        run_metadata_path = run_dir / "run_metadata.json"
+        if run_metadata_path.exists():
+            try:
+                payload = json.loads(run_metadata_path.read_text(encoding="utf-8"))
+                commit = payload.get("git_commit")
+                if isinstance(commit, str):
+                    metadata["git_sha"] = commit
+            except json.JSONDecodeError:
+                pass
+
+        runtime_info = self._probe_runtime_metadata(
+            server_command=experiment.server.command if experiment.server is not None else None
+        )
+        if runtime_info.get("torch_version"):
+            metadata["torch_version"] = runtime_info["torch_version"]
+        if runtime_info.get("vllm_commit"):
+            metadata["vllm_commit"] = runtime_info["vllm_commit"]
+
+        if not metadata["vllm_commit"]:
+            version_value = fallback_tags.get("version", fallback_tags.get("vllm_version", ""))
+            metadata["vllm_commit"] = str(version_value)
+
+        return metadata
+
+    def _probe_runtime_metadata(self, *, server_command: str | None) -> dict[str, Any]:
+        if not server_command:
+            return {}
+
+        python_path = _infer_python_from_server_command(server_command)
+        if python_path is None:
+            return {}
+        cache_key = str(python_path)
+        if cache_key in self._runtime_probe_cache:
+            return self._runtime_probe_cache[cache_key]
+
+        if not python_path.exists():
+            self._runtime_probe_cache[cache_key] = {}
+            return {}
+
+        script = (
+            "import json\n"
+            "info = {'torch_version': '', 'vllm_commit': ''}\n"
+            "try:\n"
+            "    import torch\n"
+            "    info['torch_version'] = getattr(torch, '__version__', '') or ''\n"
+            "except Exception:\n"
+            "    pass\n"
+            "try:\n"
+            "    import vllm\n"
+            "    commit = getattr(vllm, '__commit__', '') or ''\n"
+            "    if not commit:\n"
+            "        version = getattr(vllm, '__version__', '') or ''\n"
+            "        if '+g' in version:\n"
+            "            commit = version.split('+g', 1)[1]\n"
+            "        else:\n"
+            "            commit = version\n"
+            "    info['vllm_commit'] = commit\n"
+            "except Exception:\n"
+            "    pass\n"
+            "print(json.dumps(info))\n"
+        )
+        try:
+            completed = subprocess.run(
+                [str(python_path), "-c", script],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if completed.returncode != 0:
+                self._runtime_probe_cache[cache_key] = {}
+                return {}
+            payload = json.loads(completed.stdout.strip() or "{}")
+            if isinstance(payload, dict):
+                clean = {
+                    "torch_version": str(payload.get("torch_version", "") or ""),
+                    "vllm_commit": str(payload.get("vllm_commit", "") or ""),
+                }
+                self._runtime_probe_cache[cache_key] = clean
+                return clean
+        except (subprocess.SubprocessError, json.JSONDecodeError):
+            pass
+
+        self._runtime_probe_cache[cache_key] = {}
+        return {}
 
     def _wait_for_backend_ready(
         self,
@@ -376,11 +558,21 @@ class CampaignRunner:
             "error_rate_at_max_concurrency": float(max_row["error_rate"]),
         }
 
-    def _write_dry_run_plan(self, *, config: CampaignConfig, campaign_dir: Path) -> None:
+    def _write_dry_run_plan(
+        self,
+        *,
+        config: CampaignConfig,
+        campaign_dir: Path,
+        max_workers: int,
+    ) -> None:
         plan = {
             "campaign_name": config.name,
             "output_dir": str(campaign_dir),
             "experiment_count": len(config.experiments),
+            "max_workers": max_workers,
+            "baseline": config.baseline,
+            "throughput_drop_pct_threshold": config.throughput_drop_pct_threshold,
+            "latency_p95_increase_pct_threshold": config.latency_p95_increase_pct_threshold,
             "experiments": [
                 {
                     "name": experiment.name,
@@ -419,6 +611,12 @@ def _build_campaign_report(*, campaign: CampaignConfig, frame: pd.DataFrame) -> 
         "",
     ]
 
+    lines.append("## Regression checks")
+    lines.append("")
+    regression_lines = _build_regression_section(campaign=campaign, frame=frame)
+    lines.extend(regression_lines)
+    lines.append("")
+
     success_frame = frame[frame["status"] == "ok"].copy()
     if not success_frame.empty:
         sorted_frame = success_frame.sort_values("peak_throughput_tokens_per_s", ascending=False)
@@ -452,6 +650,154 @@ def _build_campaign_report(*, campaign: CampaignConfig, frame: pd.DataFrame) -> 
     return "\n".join(lines)
 
 
+def _build_regression_section(*, campaign: CampaignConfig, frame: pd.DataFrame) -> list[str]:
+    if campaign.baseline is None:
+        return ["- Not enabled (set `baseline` in campaign YAML)."]
+
+    success_frame = frame[frame["status"] == "ok"].copy()
+    if success_frame.empty:
+        return ["- No successful runs available for regression checks."]
+
+    findings = _detect_regressions(campaign=campaign, frame=success_frame)
+    if findings is None:
+        return ["- Baseline did not match any successful run rows."]
+    if not findings:
+        return [
+            "- ✅ No regressions exceeded thresholds.",
+            (
+                f"- Thresholds: throughput drop > {campaign.throughput_drop_pct_threshold:.1f}% "
+                f"or p95 latency increase > {campaign.latency_p95_increase_pct_threshold:.1f}%."
+            ),
+        ]
+
+    lines = [
+        "- ⚠ Regression detected.",
+        (
+            f"- Thresholds: throughput drop > {campaign.throughput_drop_pct_threshold:.1f}% "
+            f"or p95 latency increase > {campaign.latency_p95_increase_pct_threshold:.1f}%."
+        ),
+        "",
+    ]
+    for finding in findings:
+        lines.append(f"config: {finding['config']}")
+        lines.append(f"metric: {finding['metric']}")
+        lines.append(
+            f"{finding['baseline_label']}: {finding['baseline_value']} | "
+            f"{finding['compare_label']}: {finding['compare_value']} "
+            f"({finding['delta']})"
+        )
+        lines.append("")
+    if lines and not lines[-1]:
+        lines.pop()
+    return lines
+
+
+def _detect_regressions(*, campaign: CampaignConfig, frame: pd.DataFrame) -> list[dict[str, str]] | None:
+    tag_columns = [column for column in frame.columns if column.startswith("tag_")]
+    baseline_columns: dict[str, tuple[str, str | int | float | bool]] = {}
+    for key, expected in campaign.baseline.items():
+        resolved = _resolve_baseline_column(key=key, tag_columns=tag_columns)
+        if resolved is None:
+            return None
+        baseline_columns[resolved] = (key, expected)
+
+    baseline_mask = pd.Series(True, index=frame.index)
+    for column, (_, expected_value) in baseline_columns.items():
+        baseline_mask = baseline_mask & frame[column].map(lambda value: str(value) == str(expected_value))
+
+    baseline_rows = frame[baseline_mask].copy()
+    if baseline_rows.empty:
+        return None
+
+    compare_rows = frame[~baseline_mask].copy()
+    if compare_rows.empty:
+        return []
+
+    group_columns = [column for column in tag_columns if column not in baseline_columns]
+    baseline_lookup: dict[tuple[str, ...], pd.Series] = {}
+    for _, row in baseline_rows.iterrows():
+        key = tuple(str(row[column]) for column in group_columns)
+        if key not in baseline_lookup:
+            baseline_lookup[key] = row
+
+    findings: list[dict[str, str]] = []
+    for _, compare_row in compare_rows.iterrows():
+        key = tuple(str(compare_row[column]) for column in group_columns)
+        baseline_row = baseline_lookup.get(key)
+        if baseline_row is None:
+            continue
+
+        baseline_label = ", ".join(
+            f"{original_key}={expected_value}"
+            for original_key, expected_value in [item for item in baseline_columns.values()]
+        )
+        compare_label = ", ".join(
+            f"{column.removeprefix('tag_')}={compare_row[column]}" for column in baseline_columns
+        )
+        config = ", ".join(
+            f"{column.removeprefix('tag_')}={compare_row[column]}" for column in group_columns
+        )
+        if not config:
+            config = "(all shared tags)"
+
+        baseline_tp = _safe_float(baseline_row.get("peak_throughput_tokens_per_s"))
+        compare_tp = _safe_float(compare_row.get("peak_throughput_tokens_per_s"))
+        if baseline_tp > 0 and compare_tp >= 0:
+            throughput_drop_pct = ((baseline_tp - compare_tp) / baseline_tp) * 100.0
+            if throughput_drop_pct > campaign.throughput_drop_pct_threshold:
+                findings.append(
+                    {
+                        "config": config,
+                        "metric": "throughput",
+                        "baseline_label": baseline_label,
+                        "compare_label": compare_label,
+                        "baseline_value": f"{baseline_tp:.3f} tok/s",
+                        "compare_value": f"{compare_tp:.3f} tok/s",
+                        "delta": f"-{throughput_drop_pct:.1f}%",
+                    }
+                )
+
+        baseline_latency = _safe_float(baseline_row.get("latency_p95_at_max_concurrency"))
+        compare_latency = _safe_float(compare_row.get("latency_p95_at_max_concurrency"))
+        if baseline_latency > 0 and compare_latency >= 0:
+            latency_increase_pct = ((compare_latency - baseline_latency) / baseline_latency) * 100.0
+            if latency_increase_pct > campaign.latency_p95_increase_pct_threshold:
+                findings.append(
+                    {
+                        "config": config,
+                        "metric": "p95 latency",
+                        "baseline_label": baseline_label,
+                        "compare_label": compare_label,
+                        "baseline_value": f"{baseline_latency / 1000.0:.2f}s",
+                        "compare_value": f"{compare_latency / 1000.0:.2f}s",
+                        "delta": f"+{latency_increase_pct:.1f}%",
+                    }
+                )
+    return findings
+
+
+def _resolve_baseline_column(*, key: str, tag_columns: list[str]) -> str | None:
+    direct = f"tag_{key}"
+    if direct in tag_columns:
+        return direct
+
+    aliases = {
+        "version": ["tag_vllm_version"],
+        "vllm_version": ["tag_version"],
+    }
+    for alias in aliases.get(key, []):
+        if alias in tag_columns:
+            return alias
+    return None
+
+
+def _safe_float(value: Any) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return 0.0
+
+
 def _frame_to_markdown_lines(frame: pd.DataFrame) -> list[str]:
     columns = [str(column) for column in frame.columns]
     header = "| " + " | ".join(columns) + " |"
@@ -467,3 +813,28 @@ def _frame_to_markdown_lines(frame: pd.DataFrame) -> list[str]:
                 values.append(str(value))
         lines.append("| " + " | ".join(values) + " |")
     return lines
+
+
+def _infer_python_from_server_command(command: str) -> Path | None:
+    try:
+        tokens = shlex.split(command)
+    except ValueError:
+        return None
+
+    for token in tokens:
+        path = Path(token)
+        if token.endswith("/bin/vllm"):
+            return path.with_name("python")
+        if token.endswith("/bin/python") or token.endswith("/bin/python3"):
+            return path
+    return None
+
+
+def _detect_cpu_model() -> str:
+    cpuinfo_path = Path("/proc/cpuinfo")
+    if cpuinfo_path.exists():
+        for line in cpuinfo_path.read_text(encoding="utf-8").splitlines():
+            if line.lower().startswith("model name"):
+                _, _, value = line.partition(":")
+                return value.strip()
+    return ""

@@ -5,26 +5,26 @@ continue_on_error: true
 # Cartesian product: 3 versions x 2 devices x 2 batched token limits x 2 model lengths x 2 memory caps
 # => 48 experiments.
 matrix:
-  vllm_version: ["0.14.0", "0.15.0", "main"]
+  version: ["0.14.0", "0.15.0", "main"]
   device: ["cpu", "cuda"]
   max_num_batched_tokens: [2048, 4096]
   max_model_len: [4096, 8192]
   gpu_memory_utilization: [0.85, 0.92]
 
 experiment_template:
-  name: vllm-{vllm_version}-{device}-mbt{max_num_batched_tokens}-ml{max_model_len}-gmu{gpu_memory_utilization}
+  name: vllm-{version}-{device}-mbt{max_num_batched_tokens}-ml{max_model_len}-gmu{gpu_memory_utilization}
   config_path: local_vllm_public.yaml
   tags:
     benchmark_family: vllm-regression
   metadata:
-    expected_vllm_version: "{vllm_version}"
+    expected_vllm_version: "{version}"
   server:
     # Prepare separate environments for each version, e.g.
     # .venv-vllm-0.14.0/bin/pip install "vllm==0.14.*"
     # .venv-vllm-0.15.0/bin/pip install "vllm==0.15.*"
     # .venv-vllm-main/bin/pip install --pre --upgrade "vllm @ git+https://github.com/vllm-project/vllm.git"
     command: >-
-      .venv-vllm-{vllm_version}/bin/vllm serve Qwen/Qwen2-0.5B-Instruct
+      .venv-vllm-{version}/bin/vllm serve Qwen/Qwen2-0.5B-Instruct
       --host 0.0.0.0
       --port 8000
       --device {device}
@@ -35,3 +35,6 @@ experiment_template:
     ready_check_retries: 120
     ready_check_interval_s: 2
     shutdown_grace_s: 5
+
+baseline:
+  version: "0.15.0"

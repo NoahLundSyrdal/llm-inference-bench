@@ -53,7 +53,11 @@ def run(config_path: Path) -> None:
 
 
 @app.command()
-def campaign(config_path: Path, dry_run: bool = False) -> None:
+def campaign(
+    config_path: Path,
+    dry_run: bool = False,
+    max_workers: int = typer.Option(1, min=1, help="Max experiments to run in parallel."),
+) -> None:
     """Run a multi-experiment benchmark campaign."""
     try:
         campaign_config = load_campaign_config(config_path)
@@ -63,7 +67,7 @@ def campaign(config_path: Path, dry_run: bool = False) -> None:
 
     runner = CampaignRunner()
     try:
-        campaign_dir = runner.run(campaign_config, dry_run=dry_run)
+        campaign_dir = runner.run(campaign_config, dry_run=dry_run, max_workers=max_workers)
     except Exception as exc:  # noqa: BLE001
         typer.secho(str(exc), fg=typer.colors.RED)
         raise typer.Exit(code=1) from exc
