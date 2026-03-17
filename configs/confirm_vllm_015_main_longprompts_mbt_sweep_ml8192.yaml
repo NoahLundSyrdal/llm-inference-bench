@@ -1,0 +1,31 @@
+name: confirm-vllm-015-main-longprompts-mbt-sweep-ml8192
+output_dir: ../results/campaigns
+continue_on_error: true
+
+matrix:
+  version: ["0.15.0", "main"]
+  max_num_batched_tokens: [2048, 4096]
+  max_model_len: [8192]
+
+experiment_template:
+  name: confirm-vllm-{version}-longprompts-mbt{max_num_batched_tokens}-ml{max_model_len}
+  config_path: local_vllm_public_long_prompts.yaml
+  tags:
+    benchmark_family: vllm-015-main-confirmation
+  metadata:
+    expected_vllm_version: "{version}"
+  server:
+    command: >-
+      LD_PRELOAD=/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4
+      .venv-vllm-{version}/bin/vllm serve Qwen/Qwen2-0.5B-Instruct
+      --host 0.0.0.0
+      --port 8000
+      --max-num-batched-tokens {max_num_batched_tokens}
+      --max-model-len {max_model_len}
+    startup_grace_s: 2
+    ready_check_retries: 120
+    ready_check_interval_s: 2
+    shutdown_grace_s: 5
+
+baseline:
+  version: "0.15.0"
