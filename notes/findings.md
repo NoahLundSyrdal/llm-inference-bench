@@ -153,3 +153,20 @@ Results:
 Conclusion:
 - With prefix caching disabled, latency behaves in the expected direction (c=2 slower than c=1).
 - The earlier c1<c2 inversion is likely not a scheduler bug by itself; it is strongly confounded by warm-state/prefix-cache behavior across sweep order.
+
+### Rerun with fixed thread settings (maintainer suggestion)
+
+I reran the original 8192-token benchmark with fixed thread env vars on port 8000:
+
+- server: `OMP_NUM_THREADS=8 MKL_NUM_THREADS=8 vllm serve Qwen/Qwen2-0.5B-Instruct --host 0.0.0.0 --port 8000`
+- config: `configs/exp_vllm_public_ctx8192_stream_true.yaml`
+- run dir: `results/exp-qwen2-0.5b-ctx8192-stream-true/exp-vllm-public-ctx8192-stream-true_20260317_043809`
+
+Results (still non-monotonic at low concurrency):
+- c=1: p95 33.68 s, TTFT p50 26.63 s, tok/s 1.404
+- c=2: p95 7.02 s, TTFT p50 0.47 s, tok/s 6.717
+- ratio: **p95(c1)/p95(c2) = 4.80x**
+
+Interpretation:
+- Fixing OMP/MKL thread counts did **not** remove the c1->c2 inversion in this setup.
+- This means thread variability alone does not explain the original anomaly.
