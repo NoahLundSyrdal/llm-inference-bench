@@ -22,7 +22,6 @@ experiment_template:
       .venv-vllm-{version}/bin/vllm serve Qwen/Qwen2-0.5B-Instruct
       --host 0.0.0.0
       --port 8000
-      --device cpu
       --max-num-batched-tokens {max_num_batched_tokens}
       --max-model-len {max_model_len}
     startup_grace_s: 2
