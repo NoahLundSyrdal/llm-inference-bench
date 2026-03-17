@@ -1,0 +1,34 @@
+name: overnight-vllm-015-main-cpu-regression
+output_dir: ../results/campaigns
+continue_on_error: true
+
+# Focused matrix: 2 versions x 2 scheduler batched-token limits x 2 max-model-len x 2 workloads.
+# CPU-only in this environment (no nvidia-smi/GPU runtime available).
+matrix:
+  version: ["0.15.0", "main"]
+  config_path: ["local_vllm_public.yaml", "local_vllm_public_long_prompts.yaml"]
+  max_num_batched_tokens: [2048, 4096]
+  max_model_len: [4096, 8192]
+
+experiment_template:
+  name: vllm-{version}-{config_path}-mbt{max_num_batched_tokens}-ml{max_model_len}
+  config_path: "{config_path}"
+  tags:
+    benchmark_family: vllm-015-main-regression
+  metadata:
+    expected_vllm_version: "{version}"
+  server:
+    command: >-
+      .venv-vllm-{version}/bin/vllm serve Qwen/Qwen2-0.5B-Instruct
+      --host 0.0.0.0
+      --port 8000
+      --device cpu
+      --max-num-batched-tokens {max_num_batched_tokens}
+      --max-model-len {max_model_len}
+    startup_grace_s: 2
+    ready_check_retries: 120
+    ready_check_interval_s: 2
+    shutdown_grace_s: 5
+
+baseline:
+  version: "0.15.0"
