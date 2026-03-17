@@ -1,20 +1,17 @@
-name: overnight-vllm-015-main-cpu-regression
+name: confirm-vllm-015-main-longprompts-mbt-sweep
 output_dir: ../results/campaigns
 continue_on_error: true
 
-# Focused matrix: 2 versions x 2 scheduler batched-token limits x 2 max-model-len x 2 workloads.
-# CPU-only in this environment (no nvidia-smi/GPU runtime available).
 matrix:
   version: ["0.15.0", "main"]
-  config_path: ["local_vllm_public.yaml", "local_vllm_public_long_prompts.yaml"]
   max_num_batched_tokens: [2048, 4096]
-  max_model_len: [4096, 8192]
+  max_model_len: [4096]
 
 experiment_template:
-  name: vllm-{version}-{config_path}-mbt{max_num_batched_tokens}-ml{max_model_len}
-  config_path: "{config_path}"
+  name: confirm-vllm-{version}-longprompts-mbt{max_num_batched_tokens}-ml{max_model_len}
+  config_path: local_vllm_public_long_prompts.yaml
   tags:
-    benchmark_family: vllm-015-main-regression
+    benchmark_family: vllm-015-main-confirmation
   metadata:
     expected_vllm_version: "{version}"
   server:
