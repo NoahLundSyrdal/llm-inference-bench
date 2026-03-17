@@ -133,7 +133,7 @@ def test_campaign_runner_writes_summary_and_metadata_tags(tmp_path: Path) -> Non
                 "      stream: true",
                 "    tags:",
                 "      version: main",
-                "      hardware: cuda",
+                "      hardware: cpu",
             ]
         ),
         encoding="utf-8",

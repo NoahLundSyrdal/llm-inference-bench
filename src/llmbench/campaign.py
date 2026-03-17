@@ -703,7 +703,7 @@ def _detect_regressions(*, campaign: CampaignConfig, frame: pd.DataFrame) -> lis
 
     baseline_mask = pd.Series(True, index=frame.index)
     for column, (_, expected_value) in baseline_columns.items():
-        baseline_mask = baseline_mask & frame[column].map(lambda value: str(value) == str(expected_value))
+        baseline_mask = baseline_mask & (frame[column].astype(str) == str(expected_value))
 
     baseline_rows = frame[baseline_mask].copy()
     if baseline_rows.empty:
