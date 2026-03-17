@@ -1,0 +1,27 @@
+name: exp-vllm-public-ctx8192-coldstart-c1
+backend:
+  engine: vllm
+  base_url: http://localhost:8002
+  model: Qwen/Qwen2-0.5B-Instruct
+  endpoint: /v1/chat/completions
+
+generation:
+  max_tokens: 64
+  temperature: 0.0
+  top_p: 1.0
+  stream: true
+  request_timeout_s: 900
+
+workload:
+  label: ctx-8192-coldstart-c1
+  prompts_file: ../prompts/context_8192_tokens.json
+  prompt_field: prompt
+  num_requests: 24
+  shuffle: false
+  seed: 42
+
+concurrency_sweep: [1]
+repetitions: 1
+output_dir: ../results/exp-qwen2-0.5b-ctx8192-coldstart-c1
+metadata:
+  experiment: isolated-coldstart-single-concurrency
